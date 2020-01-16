@@ -1,6 +1,7 @@
 use chrono::prelude::*;
 use chrono::Duration;
-use std::thread::sleep;
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
 use structopt::StructOpt;
 
 #[derive(Debug)]
@@ -34,16 +35,25 @@ fn parse_accuracy(arg: &str) -> TimeAccuracy {
 
 fn main() {
     let opt = Opt::from_args();
-    println!("{:?}", opt);
+    let (tx, rx) = channel();
 
+    let timestamp_tx = tx.clone();
+    thread::spawn(move || generate_timestamps(timestamp_tx, opt.time_accuracy));
+
+    loop {
+        let timestamp = rx.recv().unwrap();
+        println!("{}", timestamp);
+    }
+}
+
+fn generate_timestamps(tx: Sender<String>, accuracy: TimeAccuracy) {
     loop {
         let now = Utc::now();
         let output = now.format("%a %Y-%m-%d - %H:%M:%S").to_string();
+        tx.send(output).unwrap();
 
-        println!("{}", output);
-
-        match calculate_sleep_duration(&opt.time_accuracy).to_std() {
-            Ok(d) => sleep(d),
+        match calculate_sleep_duration(&accuracy).to_std() {
+            Ok(d) => thread::sleep(d),
             Err(_) => continue,
         }
     }
