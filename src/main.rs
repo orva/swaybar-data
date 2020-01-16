@@ -53,7 +53,10 @@ fn generate_timestamps(tx: Sender<String>, accuracy: TimeAccuracy) {
         tx.send(output).unwrap();
 
         match calculate_sleep_duration(&accuracy).to_std() {
-            Ok(d) => thread::sleep(d),
+            Ok(sleep_duration) => thread::sleep(sleep_duration),
+            // Conversion to std::time::Duration fails if chrono::Duration is negative, which can
+            // happen if time has been adjusted to past. Just try again until system time has
+            // been stabilized.
             Err(_) => continue,
         }
     }
