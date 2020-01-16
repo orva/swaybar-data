@@ -1,0 +1,13 @@
+[package]
+name = "swaybar-data"
+description = "Non-polling data gathering for swaybar"
+keywords = ["sway", "swaybar"]
+authors = ["Iivari Äikäs <iivari.aikas@gmail.com>"]
+readme = "./README.md"
+license = "GPL-3.0-or-later"
+edition = "2018"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
