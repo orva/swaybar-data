@@ -16,6 +16,8 @@ struct Opt {
     #[structopt(long, parse(from_str = parse_accuracy), default_value = "seconds")]
     /// set timestamp update accuracy: seconds, minutes
     time_accuracy: TimeAccuracy,
+    #[structopt(long, short)]
+    debug: bool
 }
 
 fn parse_accuracy(arg: &str) -> TimeAccuracy {
@@ -35,6 +37,10 @@ fn parse_accuracy(arg: &str) -> TimeAccuracy {
 
 fn main() {
     let opt = Opt::from_args();
+    if opt.debug {
+        eprintln!("Cli options: {:?}", opt);
+    }
+
     let (tx, rx) = channel();
 
     let timestamp_tx = tx.clone();
