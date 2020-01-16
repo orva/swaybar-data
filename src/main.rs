@@ -1,27 +1,55 @@
 use chrono::prelude::*;
 use chrono::Duration;
 use std::thread::sleep;
+use structopt::StructOpt;
 
+#[derive(Debug)]
 enum TimeAccuracy {
     Seconds,
     Minutes,
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(about)]
+struct Opt {
+    #[structopt(long, parse(from_str = parse_accuracy), default_value = "seconds")]
+    /// set timestamp update accuracy: seconds, minutes
+    time_accuracy: TimeAccuracy,
+}
+
+fn parse_accuracy(arg: &str) -> TimeAccuracy {
+    let lowered = arg.to_lowercase();
+    if lowered == "minutes" {
+        TimeAccuracy::Minutes
+    } else if lowered == "seconds" {
+        TimeAccuracy::Seconds
+    } else {
+        eprintln!(
+            "Invalid time_accuracy {:?}, defaulting to seconds",
+            &lowered
+        );
+        TimeAccuracy::Seconds
+    }
+}
+
 fn main() {
+    let opt = Opt::from_args();
+    println!("{:?}", opt);
+
     loop {
         let now = Utc::now();
         let output = now.format("%a %Y-%m-%d - %H:%M:%S").to_string();
 
         println!("{}", output);
 
-        match calculate_sleep_duration(TimeAccuracy::Minutes).to_std() {
+        match calculate_sleep_duration(&opt.time_accuracy).to_std() {
             Ok(d) => sleep(d),
             Err(_) => continue,
         }
     }
 }
 
-fn calculate_sleep_duration(accuracy: TimeAccuracy) -> Duration {
+fn calculate_sleep_duration(accuracy: &TimeAccuracy) -> Duration {
     let now = Utc::now();
     let wakeup_point = match accuracy {
         // hardcoded `with_second` parameter inside valid 0-59 range, will never return None
