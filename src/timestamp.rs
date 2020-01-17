@@ -4,6 +4,7 @@ use chrono::prelude::*;
 use chrono::Duration;
 use std::sync::mpsc::Sender;
 use std::thread;
+use log::{debug};
 
 #[derive(Debug)]
 pub enum Accuracy {
@@ -46,7 +47,10 @@ impl OutputGenerator for TimestampGenerator {
                 // Conversion to std::time::Duration fails if chrono::Duration is negative, which can
                 // happen if time has been adjusted to past. Just try again until system time has
                 // been stabilized.
-                Err(_) => continue,
+                Err(_) => {
+                    debug!("Negative sleep duration");
+                    continue
+                },
             }
         }
     }
@@ -59,5 +63,6 @@ fn calculate_sleep_duration(accuracy: &Accuracy) -> Duration {
         Accuracy::Minutes => (now + Duration::minutes(1)).with_second(0).unwrap(),
         Accuracy::Seconds => now + Duration::seconds(1),
     };
+    debug!("calculating sleep duration now: {:?}, wakeup_point: {:?}", &now, &wakeup_point);
     wakeup_point.signed_duration_since(now)
 }

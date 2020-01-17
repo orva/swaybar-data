@@ -1,5 +1,7 @@
 mod timestamp;
 
+use env_logger::{Builder, Target};
+use log::{info, LevelFilter};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use structopt::StructOpt;
@@ -23,7 +25,6 @@ fn parse_accuracy(arg: &str) -> timestamp::Accuracy {
     } else if lowered == "seconds" {
         timestamp::Accuracy::Seconds
     } else {
-        eprintln!("Invalid accuracy {:?}, defaulting to seconds", &lowered);
         timestamp::Accuracy::Seconds
     }
 }
@@ -40,8 +41,14 @@ pub trait OutputGenerator {
 
 fn main() {
     let opt = Opt::from_args();
+
     if opt.debug {
-        eprintln!("Cli options: {:?}", opt);
+        Builder::from_default_env()
+            .target(Target::Stderr)
+            .filter(Some("swaybar_data"), LevelFilter::Debug)
+            .init();
+    } else {
+        Builder::from_default_env().target(Target::Stderr).init();
     }
 
     let (tx, rx) = channel();
@@ -53,6 +60,7 @@ fn main() {
     };
 
     thread::spawn(move || {
+        info!("spawning timestamp generator thread");
         let t = timestamp::TimestampGenerator::new(timestamp_tx, timestamp_config);
         t.generate().unwrap();
     });
