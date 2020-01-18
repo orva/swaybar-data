@@ -4,9 +4,9 @@ use timestamp::*;
 
 use env_logger;
 use log::{info, LevelFilter};
-use structopt::StructOpt;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about)]

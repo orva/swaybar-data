@@ -57,9 +57,10 @@ fn calculate_sleep_duration(accuracy: &Accuracy) -> std::time::Duration {
         Accuracy::Seconds => now + Duration::seconds(1),
     };
 
-    debug!("calculating sleep duration (now: {:?}, wakeup_point: {:?})",
-           &now,
-           &wakeup_point);
+    debug!(
+        "calculating sleep duration (now: {:?}, wakeup_point: {:?})",
+        &now, &wakeup_point
+    );
 
     match wakeup_point.signed_duration_since(now).to_std() {
         Ok(sleep_duration) => sleep_duration,
@@ -71,5 +72,4 @@ fn calculate_sleep_duration(accuracy: &Accuracy) -> std::time::Duration {
             std::time::Duration::from_secs(1)
         }
     }
-
 }
