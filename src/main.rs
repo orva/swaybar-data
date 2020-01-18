@@ -1,42 +1,23 @@
 mod timestamp;
 
+use timestamp::*;
+
 use env_logger::{Builder, Target};
 use log::{info, LevelFilter};
+use structopt::StructOpt;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about)]
 struct Opt {
     /// Set timestamp update accuracy: seconds, minutes
     #[structopt(long, parse(from_str = parse_accuracy), default_value = "seconds")]
-    time_accuracy: timestamp::Accuracy,
+    time_accuracy: Accuracy,
 
-    /// Enable debug printing to stderr
+    /// Enable debug printing to stderr, same as RUST_LOG="swaybar_data=debug"
     #[structopt(long, short)]
     debug: bool,
-}
-
-fn parse_accuracy(arg: &str) -> timestamp::Accuracy {
-    let lowered = arg.to_lowercase();
-    if lowered == "minutes" {
-        timestamp::Accuracy::Minutes
-    } else if lowered == "seconds" {
-        timestamp::Accuracy::Seconds
-    } else {
-        timestamp::Accuracy::Seconds
-    }
-}
-
-pub type GeneratorResult<T> = Result<(), T>;
-
-pub trait OutputGenerator {
-    type Config;
-    type Error;
-
-    fn new(tx: Sender<String>, config: Self::Config) -> Self;
-    fn generate(&self) -> GeneratorResult<Self::Error>;
 }
 
 fn main() {
@@ -54,19 +35,36 @@ fn main() {
     let (tx, rx) = channel();
 
     let timestamp_tx = tx.clone();
-    let timestamp_config = timestamp::TimestampConfig {
+    let timestamp_config = TimestampConfig {
         debug: opt.debug,
         accuracy: opt.time_accuracy,
+        format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
     };
-
-    thread::spawn(move || {
-        info!("spawning timestamp generator thread");
-        let t = timestamp::TimestampGenerator::new(timestamp_tx, timestamp_config);
-        t.generate().unwrap();
-    });
+    start_timestamp_generation(timestamp_tx, timestamp_config);
 
     loop {
-        let timestamp = rx.recv().unwrap();
+        let timestamp: String = rx.recv().unwrap();
         println!("{}", timestamp);
     }
+}
+
+fn parse_accuracy(arg: &str) -> Accuracy {
+    let lowered = arg.to_lowercase();
+    if lowered == "minutes" {
+        Accuracy::Minutes
+    } else if lowered == "seconds" {
+        Accuracy::Seconds
+    } else {
+        Accuracy::Seconds
+    }
+}
+
+fn start_timestamp_generation(tx: Sender<String>, config: TimestampConfig) {
+    info!("Spawning timestamp generation thread");
+    thread::spawn(move || {
+        let timestamps = TimestampGenerator::new(config);
+        for i in timestamps {
+            tx.send(i).unwrap();
+        }
+    });
 }
