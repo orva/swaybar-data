@@ -36,7 +36,6 @@ fn main() {
 
     let timestamp_tx = tx.clone();
     let timestamp_config = TimestampConfig {
-        debug: opt.debug,
         accuracy: opt.time_accuracy,
         format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
     };

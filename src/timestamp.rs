@@ -11,7 +11,6 @@ pub enum Accuracy {
 
 #[derive(Debug)]
 pub struct TimestampConfig {
-    pub debug: bool,
     pub accuracy: Accuracy,
     pub format: String,
 }
