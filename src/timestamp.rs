@@ -1,15 +1,16 @@
 use chrono::prelude::*;
 use chrono::Duration;
 use log::{debug, info};
+use serde_derive::Deserialize;
 use std::thread;
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Deserialize)]
 pub enum Accuracy {
     Seconds,
     Minutes,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Deserialize)]
 pub struct TimestampConfig {
     pub accuracy: Accuracy,
     pub format: String,

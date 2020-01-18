@@ -1,5 +1,7 @@
+mod config;
 mod timestamp;
 
+use config::*;
 use timestamp::*;
 
 use env_logger;
@@ -11,13 +13,13 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(about)]
 struct Opt {
-    /// Set timestamp update accuracy: seconds, minutes
-    #[structopt(long, parse(from_str = parse_accuracy), default_value = "seconds")]
-    time_accuracy: Accuracy,
-
     /// Enable debug printing to stderr, same as RUST_LOG="swaybar_data=debug"
     #[structopt(long, short)]
     debug: bool,
+
+    /// Config file location
+    #[structopt(long, short)]
+    config: std::path::PathBuf,
 }
 
 fn main() {
@@ -34,29 +36,18 @@ fn main() {
             .init();
     }
 
+    let config = Config::read_from(&opt.config).unwrap();
     let (tx, rx) = channel();
 
-    let timestamp_tx = tx.clone();
-    let timestamp_config = TimestampConfig {
-        accuracy: opt.time_accuracy,
-        format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
-    };
-    start_timestamp_generation(timestamp_tx, timestamp_config);
+    for output in config.outputs {
+        match output {
+            Output::Timestamp(conf) => start_timestamp_generation(tx.clone(), conf),
+        };
+    }
 
     loop {
         let timestamp: String = rx.recv().unwrap();
         println!("{}", timestamp);
-    }
-}
-
-fn parse_accuracy(arg: &str) -> Accuracy {
-    let lowered = arg.to_lowercase();
-    if lowered == "minutes" {
-        Accuracy::Minutes
-    } else if lowered == "seconds" {
-        Accuracy::Seconds
-    } else {
-        Accuracy::Seconds
     }
 }
 

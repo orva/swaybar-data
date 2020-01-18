@@ -1,0 +1,4 @@
+[[outputs]]
+type = "Timestamp"
+format = "%a %Y-%m-%d - %H:%M:%S"
+accuracy = "Seconds"
