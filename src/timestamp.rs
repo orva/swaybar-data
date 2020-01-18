@@ -28,6 +28,11 @@ impl TimestampGenerator {
             first_iteration: true,
         }
     }
+
+    fn generate_output(&self) -> String {
+        let now = Utc::now();
+        now.format(&self.config.format).to_string()
+    }
 }
 
 impl Iterator for TimestampGenerator {
@@ -36,16 +41,11 @@ impl Iterator for TimestampGenerator {
     fn next(&mut self) -> Option<Self::Item> {
         if self.first_iteration {
             self.first_iteration = false;
-            let now = Utc::now();
-            let output = now.format(&self.config.format).to_string();
-            return Some(output);
+            return Some(self.generate_output());
         }
 
         thread::sleep(calculate_sleep_duration(&self.config.accuracy));
-
-        let now = Utc::now();
-        let output = now.format(&self.config.format).to_string();
-        Some(output)
+        Some(self.generate_output())
     }
 }
 
