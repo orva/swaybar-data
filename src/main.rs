@@ -2,7 +2,7 @@ mod timestamp;
 
 use timestamp::*;
 
-use env_logger::{Builder, Target};
+use env_logger;
 use log::{info, LevelFilter};
 use structopt::StructOpt;
 use std::sync::mpsc::{channel, Sender};
@@ -22,14 +22,16 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-
     if opt.debug {
-        Builder::from_default_env()
-            .target(Target::Stderr)
+        env_logger::Builder::from_default_env()
+            .target(env_logger::Target::Stderr)
             .filter(Some("swaybar_data"), LevelFilter::Debug)
             .init();
     } else {
-        Builder::from_default_env().target(Target::Stderr).init();
+        env_logger::Builder::from_default_env()
+            .target(env_logger::Target::Stderr)
+            .filter_level(LevelFilter::Error)
+            .init();
     }
 
     let (tx, rx) = channel();
