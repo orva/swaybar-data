@@ -13,7 +13,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(about)]
 struct Opt {
-    /// Enable debug printing to stderr, same as RUST_LOG="swaybar_data=debug"
+    /// Enable debug printing to stderr, same as `RUST_LOG="swaybar_data=debug" swaybar-data`
     #[structopt(long, short)]
     debug: bool,
 
@@ -21,6 +21,8 @@ struct Opt {
     #[structopt(long, short)]
     config: std::path::PathBuf,
 }
+
+struct OutputUpdate(String, usize);
 
 fn main() {
     let opt = Opt::from_args();
@@ -39,24 +41,28 @@ fn main() {
     let config = Config::read_from(&opt.config).unwrap();
     let (tx, rx) = channel();
 
-    for output in config.outputs {
-        match output {
-            Output::Timestamp(conf) => start_timestamp_generation(tx.clone(), conf),
+    let mut outputs: Vec<String> = config.outputs.iter().map(|_| "".to_string()).collect();
+
+    for (i, output_conf) in config.outputs.into_iter().enumerate() {
+        match output_conf {
+            Output::Timestamp(conf) => start_timestamp_generation(tx.clone(), conf, i),
         };
     }
 
     loop {
-        let timestamp: String = rx.recv().unwrap();
-        println!("{}", timestamp);
+        let OutputUpdate(update, id) = rx.recv().unwrap();
+        outputs[id] = update;
+        let output = outputs.join(" | ");
+        println!("{}", output);
     }
 }
 
-fn start_timestamp_generation(tx: Sender<String>, config: TimestampConfig) {
+fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig, id: usize) {
     info!("Spawning timestamp generation thread");
     thread::spawn(move || {
         let timestamps = TimestampGenerator::new(config);
-        for i in timestamps {
-            tx.send(i).unwrap();
+        for ts in timestamps {
+            tx.send(OutputUpdate(ts, id)).unwrap();
         }
     });
 }
