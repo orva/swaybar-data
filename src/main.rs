@@ -1,5 +1,7 @@
 mod config;
 mod timestamp;
+mod dbusdata;
+mod generated;
 
 use config::*;
 use timestamp::*;
