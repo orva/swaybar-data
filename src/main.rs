@@ -23,6 +23,10 @@ struct Opt {
 }
 
 struct OutputUpdate(String, usize);
+struct OutputState {
+    state: Option<String>,
+    output_config: config::Output,
+}
 
 fn main() {
     let opt = Opt::from_args();
@@ -41,18 +45,30 @@ fn main() {
     let config = Config::read_from(&opt.config).unwrap();
     let (tx, rx) = channel();
 
-    let mut outputs: Vec<String> = config.outputs.iter().map(|_| "".to_string()).collect();
+    let mut outputs: Vec<OutputState> = config
+        .outputs
+        .into_iter()
+        .map(|output_config| OutputState {
+            state: None,
+            output_config,
+        })
+        .collect();
 
-    for (i, output_conf) in config.outputs.into_iter().enumerate() {
-        match output_conf {
-            Output::Timestamp(conf) => start_timestamp_generation(tx.clone(), conf, i),
+    for (i, output) in outputs.iter().enumerate() {
+        match &output.output_config {
+            Output::Timestamp(conf) => start_timestamp_generation(tx.clone(), conf.clone(), i),
         };
     }
 
     loop {
         let OutputUpdate(update, id) = rx.recv().unwrap();
-        outputs[id] = update;
-        let output = outputs.join(" | ");
+        outputs[id].state = Some(update);
+        let output = outputs
+            .iter()
+            .map(|o| o.state.clone().unwrap_or("".to_string()))
+            .collect::<Vec<String>>()
+            .join(" | ");
+
         println!("{}", output);
     }
 }

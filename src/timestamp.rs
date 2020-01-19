@@ -4,13 +4,13 @@ use log::{debug, info};
 use serde_derive::Deserialize;
 use std::thread;
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Deserialize)]
 pub enum Accuracy {
     Seconds,
     Minutes,
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Deserialize)]
 pub struct TimestampConfig {
     pub accuracy: Accuracy,
     pub format: String,

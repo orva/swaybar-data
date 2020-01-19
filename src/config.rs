@@ -3,12 +3,12 @@ use serde_derive::Deserialize;
 use std::path::Path;
 use toml;
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Deserialize)]
 pub struct Config {
     pub outputs: Vec<Output>,
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Deserialize)]
 #[serde(tag = "type")]
 pub enum Output {
     Timestamp(TimestampConfig),
