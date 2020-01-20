@@ -16,5 +16,7 @@
 //! `org.freedesktop.UPower.Device` interface as battery/powersupply devices. Benefit of this is
 //! that bindings can be generated on device which doesn't have batteries included.
 
+#[rustfmt::skip]
 pub mod upower;
+#[rustfmt::skip]
 pub mod upower_device;
