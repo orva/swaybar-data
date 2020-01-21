@@ -1,9 +1,10 @@
 mod config;
-mod timestamp;
 mod dbusdata;
 mod generated;
+mod timestamp;
 
 use config::*;
+use dbusdata::*;
 use timestamp::*;
 
 use env_logger;
@@ -62,6 +63,8 @@ fn main() {
         };
     }
 
+    start_dbusdata_generation(tx.clone());
+
     loop {
         let OutputUpdate(update, id) = rx.recv().unwrap();
         outputs[id].state = Some(update);
@@ -82,5 +85,12 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
         for ts in timestamps {
             tx.send(OutputUpdate(ts, id)).unwrap();
         }
+    });
+}
+
+fn start_dbusdata_generation(tx: Sender<OutputUpdate>) {
+    info!("Spawning dbusdata generation thread");
+    thread::spawn(move || {
+        let dd = DbusData::new(tx);
     });
 }
