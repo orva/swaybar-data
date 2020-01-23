@@ -9,7 +9,7 @@ pub struct Config {
 }
 
 #[derive(PartialEq, Debug, Clone, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum Output {
     Timestamp(TimestampConfig),
 }
@@ -31,19 +31,30 @@ mod tests {
     use crate::timestamp::*;
 
     #[test]
-    fn simple_parse() {
+    fn simple_timestamp_parse() {
         let expected = Config {
-            outputs: vec![Output::Timestamp(TimestampConfig {
-                format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
-                accuracy: Accuracy::Minutes,
-            })],
+            outputs: vec![
+                Output::Timestamp(TimestampConfig {
+                    format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
+                    accuracy: Accuracy::Minutes,
+                }),
+                Output::Timestamp(TimestampConfig {
+                    format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
+                    accuracy: Accuracy::Seconds,
+                }),
+            ],
         };
 
         let s = r#"
             [[outputs]]
-            type = "Timestamp"
+            type = "timestamp"
             format = "%a %Y-%m-%d - %H:%M:%S"
-            accuracy = "Minutes"
+            accuracy = "minutes"
+
+            [[outputs]]
+            type = "timestamp"
+            format = "%a %Y-%m-%d - %H:%M:%S"
+            accuracy = "seconds"
         "#;
         let config = Config::parse(s).unwrap();
         assert_eq!(config, expected);

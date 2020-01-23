@@ -1,9 +1,9 @@
 [[outputs]]
-type = "Timestamp"
+type = "timestamp"
 format = "%a %Y-%m-%d - %H:%M:%S"
-accuracy = "Seconds"
+accuracy = "seconds"
 
 [[outputs]]
-type = "Timestamp"
+type = "timestamp"
 format = "%a %Y-%m-%d - %H:%M:%S"
-accuracy = "Minutes"
+accuracy = "minutes"

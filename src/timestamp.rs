@@ -5,6 +5,7 @@ use serde_derive::Deserialize;
 use std::thread;
 
 #[derive(PartialEq, Debug, Clone, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Accuracy {
     Seconds,
     Minutes,
