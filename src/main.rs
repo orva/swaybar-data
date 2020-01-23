@@ -25,7 +25,8 @@ struct Opt {
     config: std::path::PathBuf,
 }
 
-struct OutputUpdate(String, usize);
+pub struct OutputUpdate(String, usize);
+
 struct OutputState {
     state: Option<String>,
     output_config: config::Output,
@@ -58,12 +59,13 @@ fn main() {
         .collect();
 
     for (i, output) in outputs.iter().enumerate() {
-        match &output.output_config {
-            Output::Timestamp(conf) => start_timestamp_generation(tx.clone(), conf.clone(), i),
-        };
+        if let Output::Timestamp(ref conf) = output.output_config {
+            start_timestamp_generation(tx.clone(), conf.clone(), i);
+        }
+        if let Output::Battery = output.output_config {
+            start_dbusdata_generation(tx.clone(), i);
+        }
     }
-
-    start_dbusdata_generation(tx.clone());
 
     loop {
         let OutputUpdate(update, id) = rx.recv().unwrap();
@@ -88,9 +90,9 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
     });
 }
 
-fn start_dbusdata_generation(tx: Sender<OutputUpdate>) {
+fn start_dbusdata_generation(tx: Sender<OutputUpdate>, id: usize) {
     info!("Spawning dbusdata generation thread");
     thread::spawn(move || {
-        let dd = DbusData::new(tx);
+        DbusData::new(tx, id);
     });
 }

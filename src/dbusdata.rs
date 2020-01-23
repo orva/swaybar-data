@@ -1,5 +1,6 @@
 use crate::generated::upower::OrgFreedesktopUPower;
 use crate::generated::upower_device::OrgFreedesktopUPowerDevice;
+use crate::OutputUpdate;
 
 use dbus::blocking::Connection;
 use log::info;
@@ -35,13 +36,13 @@ impl From<u32> for DeviceType {
     }
 }
 
-pub struct DbusData<T> {
-    tx: Sender<T>,
+pub struct DbusData {
+    tx: Sender<OutputUpdate>,
     conn: Connection,
 }
 
-impl<T> DbusData<T> {
-    pub fn new(tx: Sender<T>) -> Self {
+impl DbusData {
+    pub fn new(tx: Sender<OutputUpdate>, id: usize) -> Self {
         let conn = Connection::new_system().unwrap();
         let p = conn.with_proxy(
             "org.freedesktop.UPower",
@@ -58,10 +59,10 @@ impl<T> DbusData<T> {
             })
             .unwrap();
 
-        info!(
-            "battery capacity {:?}",
-            battery.get_percentage().unwrap().round() as i64
-        );
+        let percentage = battery.get_percentage().unwrap().floor() as i64;
+        info!("battery capacity {:?}", percentage);
+
+        tx.send(OutputUpdate(percentage.to_string(), id)).unwrap();
 
         DbusData { tx, conn }
     }

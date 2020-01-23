@@ -12,6 +12,7 @@ pub struct Config {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Output {
     Timestamp(TimestampConfig),
+    Battery,
 }
 
 impl Config {
@@ -55,6 +56,20 @@ mod tests {
             type = "timestamp"
             format = "%a %Y-%m-%d - %H:%M:%S"
             accuracy = "seconds"
+        "#;
+        let config = Config::parse(s).unwrap();
+        assert_eq!(config, expected);
+    }
+
+    #[test]
+    fn simple_battery_parse() {
+        let expected = Config {
+            outputs: vec![Output::Battery],
+        };
+
+        let s = r#"
+            [[outputs]]
+            type = "battery"
         "#;
         let config = Config::parse(s).unwrap();
         assert_eq!(config, expected);
