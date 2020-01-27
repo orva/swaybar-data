@@ -111,7 +111,7 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
     });
 }
 
-fn start_dbusdata_generation(tx: Sender<OutputUpdate>, builder: DBusdata) {
+fn start_dbusdata_generation(tx: Sender<OutputUpdate>, mut builder: DBusdata) {
     info!("Spawning dbusdata generation thread");
     thread::spawn(move || {
         if let Err(err) = builder.start_listening(tx) {

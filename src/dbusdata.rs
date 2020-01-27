@@ -10,6 +10,7 @@ use dbus::blocking::Connection;
 use dbus::message::Message;
 use log::{debug, error};
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 #[derive(PartialEq)]
@@ -43,7 +44,18 @@ impl From<u32> for DeviceType {
 
 pub struct DBusdata {
     conn: Connection,
-    battery_paths: Vec<(usize, dbus::Path<'static>)>,
+    batteries: Vec<Battery>,
+}
+
+struct Battery {
+    id: usize,
+    path: dbus::Path<'static>,
+    state: Arc<Mutex<BatteryState>>,
+}
+
+#[derive(Default)]
+pub struct BatteryState {
+    percentage: f64,
 }
 
 impl DBusdata {
@@ -51,7 +63,7 @@ impl DBusdata {
         let conn = Connection::new_system()?;
         Ok(DBusdata {
             conn,
-            battery_paths: Vec::new(),
+            batteries: Vec::new(),
         })
     }
 
@@ -59,27 +71,37 @@ impl DBusdata {
         let (id, conf) = config;
         match conf {
             Output::Battery => {
+                let proxy_timeout = Duration::from_secs(5);
                 let upower = self.conn.with_proxy(
                     "org.freedesktop.UPower",
                     "/org/freedesktop/UPower",
-                    Duration::from_secs(5),
+                    proxy_timeout,
                 );
-                let proxy_timeout = Duration::from_secs(5);
-                let battery_path = upower
+                let bat_proxy = upower
                     .enumerate_devices()?
                     .into_iter()
                     .map(|path| {
                         self.conn
                             .with_proxy("org.freedesktop.UPower", path, proxy_timeout)
                     })
-                    .find(|dev_proxy| {
-                        let dev_type = DeviceType::from(dev_proxy.get_type().unwrap());
+                    .find(|proxy| {
+                        let dev_type = DeviceType::from(proxy.get_type().unwrap());
                         dev_type == DeviceType::Battery
                     })
-                    .map(|dev_proxy| dev_proxy.path)
                     .ok_or(Error::NoBatteryFound)?;
 
-                self.battery_paths.push((id, battery_path));
+                let percentage = bat_proxy.get_percentage()?;
+                let state = BatteryState {
+                    percentage,
+                    ..BatteryState::default()
+                };
+                let battery = Battery {
+                    id,
+                    path: bat_proxy.path,
+                    state: Arc::new(Mutex::new(state)),
+                };
+
+                self.batteries.push(battery);
             }
             _ => {}
         };
@@ -87,48 +109,49 @@ impl DBusdata {
         Ok(self)
     }
 
-    pub fn start_listening(self, tx: Sender<OutputUpdate>) -> Result<(), Error> {
-        for (id, path) in self.battery_paths.into_iter() {
-            debug!("Setuping battery listener for {:?}", path);
+    pub fn start_listening(&mut self, tx: Sender<OutputUpdate>) -> Result<(), Error> {
+        for bat in self.batteries.iter() {
+            debug!("Setup battery listener for {:?}", bat.path);
             let tx = tx.clone();
-            let dev_timeout = Duration::from_secs(5);
-            let battery = self
-                .conn
-                .with_proxy("org.freedesktop.UPower", path, dev_timeout);
+            let proxy_timeout = Duration::from_secs(5);
+            let bat_proxy =
+                self.conn
+                    .with_proxy("org.freedesktop.UPower", &bat.path, proxy_timeout);
 
-            let start_percentage = battery.get_percentage().unwrap().floor() as i64;
-            let update = start_percentage.to_string();
-            tx.send(OutputUpdate { id, update })?;
+            let update = bat.state.lock().unwrap().percentage.to_string();
+            tx.send(OutputUpdate { id: bat.id, update })?;
 
-            let handler = create_battery_handler(tx, id);
-            battery.match_signal(handler)?;
+            let handler = create_battery_handler(tx, bat.id, bat.state.clone());
+            bat_proxy.match_signal(handler)?;
         }
 
-        let mut conn = self.conn;
         loop {
-            conn.process(Duration::from_secs(1))?;
+            self.conn.process(Duration::from_secs(1))?;
         }
     }
 }
 
-fn create_battery_handler(
+fn create_battery_handler<'a>(
     tx: Sender<OutputUpdate>,
     id: usize,
-) -> impl FnMut(UPowerDevPropsChanged, &Connection, &Message) -> bool {
+    state_lock: Arc<Mutex<BatteryState>>,
+) -> impl FnMut(UPowerDevPropsChanged, &Connection, &Message) -> bool + 'a {
     move |props: UPowerDevPropsChanged, _: &Connection, _: &Message| {
+        let mut state = state_lock.lock().unwrap();
         if let Some(arg) = props.changed_properties.get("Percentage") {
-            let percentage = arg.as_f64().unwrap().floor() as i64;
-            debug!("Sending new battery percentage {}", percentage);
-
-            let update = percentage.to_string();
-            return match tx.send(OutputUpdate { id, update }) {
-                Ok(_) => true,
-                Err(err) => {
-                    error!("Sending battery update failed with {}", err);
-                    false
-                }
-            };
+            let percentage = arg.as_f64().unwrap();
+            state.percentage = percentage;
         };
-        true
+
+        let update = state.percentage.to_string();
+        debug!("Sending new battery percentage {}", update);
+
+        return match tx.send(OutputUpdate { id, update }) {
+            Ok(_) => true,
+            Err(err) => {
+                error!("Sending battery update failed with {}", err);
+                false
+            }
+        };
     }
 }
