@@ -97,7 +97,8 @@ impl DBusdata {
                 .with_proxy("org.freedesktop.UPower", path, dev_timeout);
 
             let start_percentage = battery.get_percentage().unwrap().floor() as i64;
-            tx.send(OutputUpdate(start_percentage.to_string(), id))?;
+            let update = start_percentage.to_string();
+            tx.send(OutputUpdate { id, update })?;
 
             let handler = create_battery_handler(tx, id);
             battery.match_signal(handler)?;
@@ -119,7 +120,8 @@ fn create_battery_handler(
             let percentage = arg.as_f64().unwrap().floor() as i64;
             debug!("Sending new battery percentage {}", percentage);
 
-            return match tx.send(OutputUpdate(percentage.to_string(), id)) {
+            let update = percentage.to_string();
+            return match tx.send(OutputUpdate { id, update }) {
                 Ok(_) => true,
                 Err(err) => {
                     error!("Sending battery update failed with {}", err);

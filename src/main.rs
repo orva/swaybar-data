@@ -26,7 +26,10 @@ struct Opt {
     config: std::path::PathBuf,
 }
 
-pub struct OutputUpdate(String, usize);
+pub struct OutputUpdate {
+    id: usize,
+    update: String,
+}
 
 struct OutputState {
     state: Option<String>,
@@ -86,7 +89,7 @@ fn main() {
     start_dbusdata_generation(tx.clone(), dbusdata_builder);
 
     loop {
-        let OutputUpdate(update, id) = rx.recv().unwrap();
+        let OutputUpdate { id, update } = rx.recv().unwrap();
         outputs[id].state = Some(update);
         let output = outputs
             .iter()
@@ -102,8 +105,8 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
     info!("Spawning timestamp generation thread");
     thread::spawn(move || {
         let timestamps = TimestampGenerator::new(config);
-        for ts in timestamps {
-            tx.send(OutputUpdate(ts, id)).unwrap();
+        for update in timestamps {
+            tx.send(OutputUpdate { id, update }).unwrap();
         }
     });
 }
