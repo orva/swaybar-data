@@ -1,5 +1,5 @@
 use crate::timestamp::TimestampConfig;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use std::path::Path;
 use toml;
 

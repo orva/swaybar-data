@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 use chrono::Duration;
 use log::{debug, info};
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use std::thread;
 
 #[derive(PartialEq, Debug, Clone, Deserialize)]
