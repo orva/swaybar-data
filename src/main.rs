@@ -93,6 +93,6 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
 fn start_dbusdata_generation(tx: Sender<OutputUpdate>, id: usize) {
     info!("Spawning dbusdata generation thread");
     thread::spawn(move || {
-        DbusData::new(tx, id);
+        DBusData::new(tx, id);
     });
 }

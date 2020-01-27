@@ -36,12 +36,12 @@ impl From<u32> for DeviceType {
     }
 }
 
-pub struct DbusData {
+pub struct DBusData {
     tx: Sender<OutputUpdate>,
     conn: Connection,
 }
 
-impl DbusData {
+impl DBusData {
     pub fn new(tx: Sender<OutputUpdate>, id: usize) -> Self {
         let conn = Connection::new_system().unwrap();
         let p = conn.with_proxy(
@@ -64,6 +64,6 @@ impl DbusData {
 
         tx.send(OutputUpdate(percentage.to_string(), id)).unwrap();
 
-        DbusData { tx, conn }
+        DBusData { tx, conn }
     }
 }
