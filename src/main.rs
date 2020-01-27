@@ -66,14 +66,24 @@ fn main() {
         })
         .collect();
 
+    let mut dbusdata_builder = match DBusdata::new() {
+        Ok(builder) => builder,
+        Err(err) => {
+            error!("Error while connecting to DBus {}", err);
+            std::process::exit(2);
+        }
+    };
+
     for (i, output) in outputs.iter().enumerate() {
         if let Output::Timestamp(ref conf) = output.output_config {
             start_timestamp_generation(tx.clone(), conf.clone(), i);
         }
         if let Output::Battery = output.output_config {
-            start_dbusdata_generation(tx.clone(), i);
+            dbusdata_builder.with_config((i, Output::Battery)).unwrap();
         }
     }
+
+    start_dbusdata_generation(tx.clone(), dbusdata_builder);
 
     loop {
         let OutputUpdate(update, id) = rx.recv().unwrap();
@@ -98,9 +108,11 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
     });
 }
 
-fn start_dbusdata_generation(tx: Sender<OutputUpdate>, id: usize) {
+fn start_dbusdata_generation(tx: Sender<OutputUpdate>, builder: DBusdata) {
     info!("Spawning dbusdata generation thread");
     thread::spawn(move || {
-        DBusData::new(tx, id);
+        if let Err(err) = builder.start_listening(tx) {
+            error!("DBus data processing stopped with error {}", err);
+        }
     });
 }
