@@ -1,5 +1,6 @@
 mod config;
 mod dbusdata;
+mod error;
 mod generated;
 mod timestamp;
 
@@ -8,7 +9,7 @@ use dbusdata::*;
 use timestamp::*;
 
 use env_logger;
-use log::{info, LevelFilter};
+use log::{error, info, LevelFilter};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use structopt::StructOpt;
@@ -46,7 +47,14 @@ fn main() {
             .init();
     }
 
-    let config = Config::read_from(&opt.config).unwrap();
+    let config = match Config::read_from(&opt.config) {
+        Ok(conf) => conf,
+        Err(err) => {
+            error!("Error while parsing config: {}", err);
+            std::process::exit(1);
+        }
+    };
+
     let (tx, rx) = channel();
 
     let mut outputs: Vec<OutputState> = config

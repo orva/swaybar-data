@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::timestamp::TimestampConfig;
 use serde::Deserialize;
 use std::path::Path;
@@ -16,13 +17,13 @@ pub enum Output {
 }
 
 impl Config {
-    pub fn read_from(path: &Path) -> Option<Config> {
-        let source = std::fs::read_to_string(path).ok()?;
+    pub fn read_from(path: &Path) -> Result<Self, Error> {
+        let source = std::fs::read_to_string(path)?;
         Config::parse(&source)
     }
 
-    fn parse(source: &str) -> Option<Config> {
-        toml::from_str(source).ok()
+    fn parse(source: &str) -> Result<Self, Error> {
+        toml::from_str(source).map_err(Error::MalformedConfig)
     }
 }
 
