@@ -6,12 +6,12 @@ use toml;
 
 #[derive(PartialEq, Debug, Clone, Deserialize)]
 pub struct Config {
-    pub outputs: Vec<Output>,
+    pub outputs: Vec<OutputConfig>,
 }
 
 #[derive(PartialEq, Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
-pub enum Output {
+pub enum OutputConfig {
     Timestamp(TimestampConfig),
     Battery,
 }
@@ -36,11 +36,11 @@ mod tests {
     fn simple_timestamp_parse() {
         let expected = Config {
             outputs: vec![
-                Output::Timestamp(TimestampConfig {
+                OutputConfig::Timestamp(TimestampConfig {
                     format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
                     accuracy: Accuracy::Minutes,
                 }),
-                Output::Timestamp(TimestampConfig {
+                OutputConfig::Timestamp(TimestampConfig {
                     format: "%a %Y-%m-%d - %H:%M:%S".to_string(),
                     accuracy: Accuracy::Seconds,
                 }),
@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn simple_battery_parse() {
         let expected = Config {
-            outputs: vec![Output::Battery],
+            outputs: vec![OutputConfig::Battery],
         };
 
         let s = r#"

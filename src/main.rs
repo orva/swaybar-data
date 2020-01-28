@@ -14,6 +14,17 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use structopt::StructOpt;
 
+
+pub struct OutputUpdate {
+    id: usize,
+    update: UpdateType,
+}
+
+pub enum UpdateType {
+    Timestamp(String),
+    Percentage(f64),
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(about)]
 struct Opt {
@@ -26,14 +37,46 @@ struct Opt {
     config: std::path::PathBuf,
 }
 
-pub struct OutputUpdate {
-    id: usize,
-    update: String,
+struct Output {
+    state: OutputState,
+    output_config: config::OutputConfig,
 }
 
-struct OutputState {
-    state: Option<String>,
-    output_config: config::Output,
+impl Output {
+    fn update(&mut self, update: UpdateType) {
+        match self.state {
+            OutputState::Timestamp(_) => {
+                if let UpdateType::Timestamp(s) = update {
+                    self.state = OutputState::Timestamp(s)
+                }
+            }
+            OutputState::Battery(ref mut state) => {
+                if let UpdateType::Percentage(p) = update {
+                    state.percentage = p;
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum OutputState {
+    Timestamp(String),
+    Battery(BatteryState),
+}
+
+impl From<&config::OutputConfig> for OutputState {
+    fn from(c: &config::OutputConfig) -> Self {
+        match c {
+            OutputConfig::Timestamp(_) => OutputState::Timestamp("".to_string()),
+            OutputConfig::Battery => OutputState::Battery(BatteryState::default()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct BatteryState {
+    percentage: f64,
 }
 
 fn main() {
@@ -60,11 +103,11 @@ fn main() {
 
     let (tx, rx) = channel();
 
-    let mut outputs: Vec<OutputState> = config
+    let mut outputs: Vec<Output> = config
         .outputs
         .into_iter()
-        .map(|output_config| OutputState {
-            state: None,
+        .map(|output_config| Output {
+            state: OutputState::from(&output_config),
             output_config,
         })
         .collect();
@@ -78,22 +121,35 @@ fn main() {
     };
 
     for (i, output) in outputs.iter().enumerate() {
-        if let Output::Timestamp(ref conf) = output.output_config {
+        if let OutputConfig::Timestamp(ref conf) = output.output_config {
             start_timestamp_generation(tx.clone(), conf.clone(), i);
         }
-        if let Output::Battery = output.output_config {
-            dbusdata_builder.with_config((i, Output::Battery)).unwrap();
+        if let OutputConfig::Battery = output.output_config {
+            dbusdata_builder
+                .with_config((i, OutputConfig::Battery))
+                .unwrap();
         }
     }
 
     start_dbusdata_generation(tx.clone(), dbusdata_builder);
 
     loop {
-        let OutputUpdate { id, update } = rx.recv().unwrap();
-        outputs[id].state = Some(update);
+        let OutputUpdate { id, update } = match rx.recv() {
+            Err(err) => {
+                error!("Error while receiving mspc messages {}", err);
+                break;
+            }
+            Ok(up) => up,
+        };
+
+        outputs[id].update(update);
+
         let output = outputs
             .iter()
-            .map(|o| o.state.clone().unwrap_or("".to_string()))
+            .map(|o| match o.state.clone() {
+                OutputState::Timestamp(s) => s,
+                OutputState::Battery(s) => s.percentage.to_string(),
+            })
             .collect::<Vec<String>>()
             .join(" | ");
 
@@ -106,7 +162,11 @@ fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig,
     thread::spawn(move || {
         let timestamps = TimestampGenerator::new(config);
         for update in timestamps {
-            tx.send(OutputUpdate { id, update }).unwrap();
+            tx.send(OutputUpdate {
+                id,
+                update: UpdateType::Timestamp(update),
+            })
+            .unwrap();
         }
     });
 }
