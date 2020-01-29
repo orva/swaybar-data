@@ -77,9 +77,12 @@ impl DBusdata {
                         self.conn
                             .with_proxy("org.freedesktop.UPower", path, proxy_timeout)
                     })
-                    .find(|proxy| {
-                        let dev_type = DeviceType::from(proxy.get_type().unwrap());
-                        dev_type == DeviceType::Battery
+                    .find(|proxy| match proxy.get_type() {
+                        Err(_) => {
+                            error!("Failed to get device type");
+                            false
+                        }
+                        Ok(dt) => DeviceType::from(dt) == DeviceType::Battery,
                     })
                     .ok_or(Error::NoBatteryFound)?;
 
