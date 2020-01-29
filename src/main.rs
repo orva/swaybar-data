@@ -37,47 +37,55 @@ struct Opt {
     config: std::path::PathBuf,
 }
 
-struct Output {
-    state: OutputState,
-    output_config: config::OutputConfig,
+enum Output {
+    Timestamp(Timestamp),
+    Battery(Battery),
 }
 
-impl Output {
-    fn update(&mut self, update: UpdateType) {
-        match self.state {
-            OutputState::Timestamp(_) => {
-                if let UpdateType::Timestamp(s) = update {
-                    self.state = OutputState::Timestamp(s)
-                }
-            }
-            OutputState::Battery(ref mut state) => match update {
-                UpdateType::Percentage(p) => state.percentage = p,
-                UpdateType::OnBattery(b) => state.on_battery = b,
-                _ => {}
-            },
-        }
-    }
+struct Timestamp {
+    state: String,
+    config: timestamp::TimestampConfig,
 }
 
-#[derive(Debug, Clone)]
-enum OutputState {
-    Timestamp(String),
-    Battery(BatteryState),
-}
-
-impl From<&config::OutputConfig> for OutputState {
-    fn from(c: &config::OutputConfig) -> Self {
-        match c {
-            OutputConfig::Timestamp(_) => OutputState::Timestamp("".to_string()),
-            OutputConfig::Battery => OutputState::Battery(BatteryState::default()),
-        }
-    }
+struct Battery {
+    state: BatteryState,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct BatteryState {
     percentage: f64,
     on_battery: bool,
+}
+
+impl Output {
+    fn update(&mut self, update: UpdateType) {
+        match self {
+            Output::Timestamp(ref mut ts) => {
+                if let UpdateType::Timestamp(s) = update {
+                    ts.state = s;
+                }
+            }
+            Output::Battery(ref mut bat) => match update {
+                UpdateType::Percentage(p) => bat.state.percentage = p,
+                UpdateType::OnBattery(b) => bat.state.on_battery = b,
+                _ => {}
+            },
+        }
+    }
+}
+
+impl From<&config::OutputConfig> for Output {
+    fn from(c: &config::OutputConfig) -> Self {
+        match c {
+            OutputConfig::Timestamp(c) => Output::Timestamp(Timestamp {
+                state: "".to_string(),
+                config: c.clone(),
+            }),
+            OutputConfig::Battery => Output::Battery(Battery {
+                state: BatteryState::default(),
+            }),
+        }
+    }
 }
 
 fn main() {
@@ -107,10 +115,7 @@ fn main() {
     let mut outputs: Vec<Output> = config
         .outputs
         .into_iter()
-        .map(|output_config| Output {
-            state: OutputState::from(&output_config),
-            output_config,
-        })
+        .map(|output_config| Output::from(&output_config))
         .collect();
 
     let mut dbusdata_builder = match DBusdata::new() {
@@ -122,13 +127,15 @@ fn main() {
     };
 
     for (i, output) in outputs.iter().enumerate() {
-        if let OutputConfig::Timestamp(ref conf) = output.output_config {
-            start_timestamp_generation(tx.clone(), conf.clone(), i);
-        }
-        if let OutputConfig::Battery = output.output_config {
-            dbusdata_builder
-                .with_config((i, OutputConfig::Battery))
-                .unwrap();
+        match output {
+            Output::Timestamp(ref ts) => {
+                start_timestamp_generation(tx.clone(), ts.config.clone(), i);
+            }
+            Output::Battery(ref _bat) => {
+                dbusdata_builder
+                    .with_config((i, OutputConfig::Battery))
+                    .unwrap();
+            }
         }
     }
 
@@ -147,12 +154,12 @@ fn main() {
 
         let output = outputs
             .iter()
-            .map(|o| match o.state.clone() {
-                OutputState::Timestamp(s) => s,
-                OutputState::Battery(s) => format!(
+            .map(|out| match out {
+                Output::Timestamp(ref ts) => ts.state.clone(),
+                Output::Battery(ref bat) => format!(
                     "discharging: {}, percentage: {}",
-                    s.on_battery,
-                    s.percentage.to_string()
+                    bat.state.on_battery,
+                    bat.state.percentage.to_string()
                 ),
             })
             .collect::<Vec<String>>()
