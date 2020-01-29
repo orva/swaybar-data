@@ -14,7 +14,6 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use structopt::StructOpt;
 
-
 pub struct OutputUpdate {
     id: usize,
     update: UpdateType,
@@ -23,6 +22,7 @@ pub struct OutputUpdate {
 pub enum UpdateType {
     Timestamp(String),
     Percentage(f64),
+    OnBattery(bool),
 }
 
 #[derive(Debug, StructOpt)]
@@ -50,11 +50,11 @@ impl Output {
                     self.state = OutputState::Timestamp(s)
                 }
             }
-            OutputState::Battery(ref mut state) => {
-                if let UpdateType::Percentage(p) = update {
-                    state.percentage = p;
-                }
-            }
+            OutputState::Battery(ref mut state) => match update {
+                UpdateType::Percentage(p) => state.percentage = p,
+                UpdateType::OnBattery(b) => state.on_battery = b,
+                _ => {}
+            },
         }
     }
 }
@@ -77,6 +77,7 @@ impl From<&config::OutputConfig> for OutputState {
 #[derive(Debug, Clone, Default)]
 pub struct BatteryState {
     percentage: f64,
+    on_battery: bool,
 }
 
 fn main() {
@@ -148,7 +149,11 @@ fn main() {
             .iter()
             .map(|o| match o.state.clone() {
                 OutputState::Timestamp(s) => s,
-                OutputState::Battery(s) => s.percentage.to_string(),
+                OutputState::Battery(s) => format!(
+                    "discharging: {}, percentage: {}",
+                    s.on_battery,
+                    s.percentage.to_string()
+                ),
             })
             .collect::<Vec<String>>()
             .join(" | ");

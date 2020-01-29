@@ -1,5 +1,6 @@
 use crate::config::OutputConfig;
 use crate::error::Error;
+use crate::generated::upower::OrgFreedesktopDBusPropertiesPropertiesChanged as UPowerPropsChanged;
 use crate::generated::upower::OrgFreedesktopUPower;
 use crate::generated::upower_device::OrgFreedesktopDBusPropertiesPropertiesChanged as UPowerDevPropsChanged;
 use crate::generated::upower_device::OrgFreedesktopUPowerDevice;
@@ -100,10 +101,28 @@ impl DBusdata {
     }
 
     pub fn start_listening(&mut self, tx: Sender<OutputUpdate>) -> Result<(), Error> {
+        let proxy_timeout = Duration::from_secs(5);
+
+        let on_battery = if self.batteries.is_empty() {
+            false
+        } else {
+            debug!("Setup charging state listener");
+
+            let upower_proxy = self.conn.with_proxy(
+                "org.freedesktop.UPower",
+                "/org/freedesktop/UPower",
+                proxy_timeout,
+            );
+            let bat_ids = self.batteries.iter().map(|b| b.id).collect();
+            let handler = create_discharging_state_handler(tx.clone(), bat_ids);
+            upower_proxy.match_signal(handler)?;
+            upower_proxy.get_on_battery()?
+        };
+
         for bat in self.batteries.iter() {
             debug!("Setup battery listener for {:?}", bat.path);
+
             let tx = tx.clone();
-            let proxy_timeout = Duration::from_secs(5);
             let bat_proxy =
                 self.conn
                     .with_proxy("org.freedesktop.UPower", &bat.path, proxy_timeout);
@@ -112,8 +131,12 @@ impl DBusdata {
                 id: bat.id,
                 update: UpdateType::Percentage(percentage),
             })?;
+            tx.send(OutputUpdate {
+                id: bat.id,
+                update: UpdateType::OnBattery(on_battery),
+            })?;
 
-            let handler = create_battery_handler(tx, bat.id);
+            let handler = create_battery_change_handler(tx, bat.id);
             bat_proxy.match_signal(handler)?;
         }
 
@@ -123,7 +146,7 @@ impl DBusdata {
     }
 }
 
-fn create_battery_handler<'a>(
+fn create_battery_change_handler<'a>(
     tx: Sender<OutputUpdate>,
     id: usize,
 ) -> impl FnMut(UPowerDevPropsChanged, &Connection, &Message) -> bool + 'a {
@@ -143,6 +166,35 @@ fn create_battery_handler<'a>(
             if let Err(err) = tx.send(OutputUpdate { id, update }) {
                 error!("Sending battery update failed with {}", err);
                 return false;
+            }
+        }
+
+        true
+    }
+}
+
+fn create_discharging_state_handler<'a>(
+    tx: Sender<OutputUpdate>,
+    ids: Vec<usize>,
+) -> impl FnMut(UPowerPropsChanged, &Connection, &Message) -> bool + 'a {
+    move |props: UPowerPropsChanged, _: &Connection, _: &Message| {
+        if let Some(arg) = props.changed_properties.get("OnBattery") {
+            let on_battery = match arg.as_u64() {
+                Some(p) => p != 0,
+                None => {
+                    error!("OnBattery could not be read as u64, terminating listener");
+                    return false;
+                }
+            };
+
+            debug!("Sending new on_battery state {}", on_battery);
+
+            for id in ids.clone() {
+                let update = UpdateType::OnBattery(on_battery);
+                if let Err(err) = tx.send(OutputUpdate { id, update }) {
+                    error!("Sending battery update failed with {}", err);
+                    return false;
+                }
             }
         }
 
