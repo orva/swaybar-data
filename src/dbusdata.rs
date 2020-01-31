@@ -126,11 +126,25 @@ impl DBusdata {
             let bat_proxy =
                 self.conn
                     .with_proxy("org.freedesktop.UPower", &bat.path, proxy_timeout);
+
             let percentage = bat_proxy.get_percentage()?;
             tx.send(OutputUpdate {
                 id: bat.id,
                 update: UpdateType::Percentage(percentage),
             })?;
+
+            let time_to_full = bat_proxy.get_time_to_full()?;
+            tx.send(OutputUpdate {
+                id: bat.id,
+                update: UpdateType::TimeToFull(time_to_full),
+            })?;
+
+            let time_to_empty = bat_proxy.get_time_to_empty()?;
+            tx.send(OutputUpdate {
+                id: bat.id,
+                update: UpdateType::TimeToEmpty(time_to_empty),
+            })?;
+
             tx.send(OutputUpdate {
                 id: bat.id,
                 update: UpdateType::OnBattery(on_battery),
@@ -163,6 +177,42 @@ fn create_battery_change_handler<'a>(
             debug!("Sending new battery percentage {}", percentage);
 
             let update = UpdateType::Percentage(percentage);
+            if let Err(err) = tx.send(OutputUpdate { id, update }) {
+                error!("Sending battery update failed with {}", err);
+                return false;
+            }
+        }
+
+        if let Some(arg) = props.changed_properties.get("TimeToFull") {
+            let time_to_full = match arg.as_i64() {
+                Some(t) => t,
+                None => {
+                    error!("TimeToFull could not be read as i64, terminating listener");
+                    return false;
+                }
+            };
+
+            debug!("Sending new battery time_to_full {}", time_to_full);
+
+            let update = UpdateType::TimeToFull(time_to_full);
+            if let Err(err) = tx.send(OutputUpdate { id, update }) {
+                error!("Sending battery update failed with {}", err);
+                return false;
+            }
+        }
+
+        if let Some(arg) = props.changed_properties.get("TimeToEmpty") {
+            let time_to_empty = match arg.as_i64() {
+                Some(t) => t,
+                None => {
+                    error!("TimeToEmpty could not be read as i64, terminating listener");
+                    return false;
+                }
+            };
+
+            debug!("Sending new battery time_to_empty {}", time_to_empty);
+
+            let update = UpdateType::TimeToEmpty(time_to_empty);
             if let Err(err) = tx.send(OutputUpdate { id, update }) {
                 error!("Sending battery update failed with {}", err);
                 return false;

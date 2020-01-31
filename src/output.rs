@@ -10,6 +10,8 @@ pub enum UpdateType {
     Timestamp(String),
     Percentage(f64),
     OnBattery(bool),
+    TimeToFull(i64),
+    TimeToEmpty(i64),
 }
 
 pub enum Output {
@@ -30,6 +32,8 @@ pub struct Battery {
 pub struct BatteryState {
     pub percentage: f64,
     pub on_battery: bool,
+    pub seconds_to_full: i64,
+    pub seconds_to_empty: i64,
 }
 
 impl Output {
@@ -43,6 +47,8 @@ impl Output {
             Output::Battery(ref mut bat) => match update {
                 UpdateType::Percentage(p) => bat.state.percentage = p,
                 UpdateType::OnBattery(b) => bat.state.on_battery = b,
+                UpdateType::TimeToFull(t) => bat.state.seconds_to_full = t,
+                UpdateType::TimeToEmpty(t) => bat.state.seconds_to_empty = t,
                 _ => {}
             },
         }
@@ -52,11 +58,25 @@ impl Output {
         match self {
             Output::Timestamp(ref ts) => ts.state.clone(),
             Output::Battery(ref bat) => match bat.state.on_battery {
-                true => format!("BAT: {}%", bat.state.percentage),
-                false => format!("CHR: {}%", bat.state.percentage),
+                true => format!(
+                    "BAT {}%: {} remaining",
+                    bat.state.percentage,
+                    secs_to_human(bat.state.seconds_to_empty)
+                ),
+                false => format!(
+                    "CHR {}%: {} to full",
+                    bat.state.percentage,
+                    secs_to_human(bat.state.seconds_to_full)
+                ),
             },
         }
     }
+}
+
+fn secs_to_human(secs: i64) -> String {
+    let hours = secs / 3600;
+    let mins = secs % 3600 / 60;
+    format!("{}:{}", hours, mins)
 }
 
 impl From<&OutputConfig> for Output {
