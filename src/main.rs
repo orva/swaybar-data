@@ -2,10 +2,12 @@ mod config;
 mod dbusdata;
 mod error;
 mod generated;
+mod output;
 mod timestamp;
 
 use config::*;
 use dbusdata::*;
+use output::*;
 use timestamp::*;
 
 use env_logger;
@@ -13,17 +15,6 @@ use log::{error, info, LevelFilter};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use structopt::StructOpt;
-
-pub struct OutputUpdate {
-    id: usize,
-    update: UpdateType,
-}
-
-pub enum UpdateType {
-    Timestamp(String),
-    Percentage(f64),
-    OnBattery(bool),
-}
 
 #[derive(Debug, StructOpt)]
 #[structopt(about)]
@@ -35,57 +26,6 @@ struct Opt {
     /// Config file location
     #[structopt(long, short)]
     config: std::path::PathBuf,
-}
-
-enum Output {
-    Timestamp(Timestamp),
-    Battery(Battery),
-}
-
-struct Timestamp {
-    state: String,
-    config: timestamp::TimestampConfig,
-}
-
-struct Battery {
-    state: BatteryState,
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct BatteryState {
-    percentage: f64,
-    on_battery: bool,
-}
-
-impl Output {
-    fn update(&mut self, update: UpdateType) {
-        match self {
-            Output::Timestamp(ref mut ts) => {
-                if let UpdateType::Timestamp(s) = update {
-                    ts.state = s;
-                }
-            }
-            Output::Battery(ref mut bat) => match update {
-                UpdateType::Percentage(p) => bat.state.percentage = p,
-                UpdateType::OnBattery(b) => bat.state.on_battery = b,
-                _ => {}
-            },
-        }
-    }
-}
-
-impl From<&config::OutputConfig> for Output {
-    fn from(c: &config::OutputConfig) -> Self {
-        match c {
-            OutputConfig::Timestamp(c) => Output::Timestamp(Timestamp {
-                state: "".to_string(),
-                config: c.clone(),
-            }),
-            OutputConfig::Battery => Output::Battery(Battery {
-                state: BatteryState::default(),
-            }),
-        }
-    }
 }
 
 fn main() {
