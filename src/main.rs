@@ -94,14 +94,7 @@ fn main() {
 
         let output = outputs
             .iter()
-            .map(|out| match out {
-                Output::Timestamp(ref ts) => ts.state.clone(),
-                Output::Battery(ref bat) => format!(
-                    "discharging: {}, percentage: {}",
-                    bat.state.on_battery,
-                    bat.state.percentage.to_string()
-                ),
-            })
+            .map(|out| out.as_plain())
             .collect::<Vec<String>>()
             .join(" | ");
 

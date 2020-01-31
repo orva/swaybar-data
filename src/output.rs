@@ -47,6 +47,16 @@ impl Output {
             },
         }
     }
+
+    pub fn as_plain(&self) -> String {
+        match self {
+            Output::Timestamp(ref ts) => ts.state.clone(),
+            Output::Battery(ref bat) => match bat.state.on_battery {
+                true => format!("BAT: {}%", bat.state.percentage),
+                false => format!("CHR: {}%", bat.state.percentage),
+            },
+        }
+    }
 }
 
 impl From<&OutputConfig> for Output {
