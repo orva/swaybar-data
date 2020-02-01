@@ -4,7 +4,7 @@ use crate::generated::upower::OrgFreedesktopDBusPropertiesPropertiesChanged as U
 use crate::generated::upower::OrgFreedesktopUPower;
 use crate::generated::upower_device::OrgFreedesktopDBusPropertiesPropertiesChanged as UPowerDevPropsChanged;
 use crate::generated::upower_device::OrgFreedesktopUPowerDevice;
-use crate::{OutputUpdate, UpdateType};
+use crate::output::{OutputUpdate, UpdateType};
 
 use dbus::arg::RefArg;
 use dbus::blocking::Connection;
