@@ -76,7 +76,11 @@ impl Output {
 fn secs_to_human(secs: i64) -> String {
     let hours = secs / 3600;
     let mins = secs % 3600 / 60;
-    format!("{}:{}", hours, mins)
+    let min_str = match mins < 10 {
+        true => format!("0{}", mins),
+        false => mins.to_string(),
+    };
+    format!("{}:{}", hours, min_str)
 }
 
 impl From<&OutputConfig> for Output {
