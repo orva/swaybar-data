@@ -37,19 +37,35 @@ pub struct BatteryState {
 }
 
 impl Output {
-    pub fn update(&mut self, update: UpdateType) {
+    pub fn update(&mut self, update: UpdateType) -> bool {
         match self {
             Output::Timestamp(ref mut ts) => {
                 if let UpdateType::Timestamp(s) = update {
+                    let changed = ts.state != s;
                     ts.state = s;
+                    changed
+                } else {
+                    false
                 }
             }
             Output::Battery(ref mut bat) => match update {
-                UpdateType::Percentage(p) => bat.state.percentage = p,
-                UpdateType::OnBattery(b) => bat.state.on_battery = b,
-                UpdateType::TimeToFull(t) => bat.state.seconds_to_full = t,
-                UpdateType::TimeToEmpty(t) => bat.state.seconds_to_empty = t,
-                _ => {}
+                UpdateType::Percentage(p) => {
+                    bat.state.percentage = p;
+                    bat.state.percentage == p
+                }
+                UpdateType::OnBattery(b) => {
+                    bat.state.on_battery = b;
+                    bat.state.on_battery == b
+                }
+                UpdateType::TimeToFull(t) => {
+                    bat.state.seconds_to_full = t;
+                    bat.state.seconds_to_full == t
+                }
+                UpdateType::TimeToEmpty(t) => {
+                    bat.state.seconds_to_empty = t;
+                    bat.state.seconds_to_empty == t
+                }
+                _ => false,
             },
         }
     }

@@ -90,15 +90,17 @@ fn main() {
             Ok(up) => up,
         };
 
-        outputs[id].update(update);
+        let output_changed = outputs[id].update(update);
 
-        let output = outputs
-            .iter()
-            .map(|out| out.as_plain())
-            .collect::<Vec<String>>()
-            .join(" | ");
+        if output_changed {
+            let output = outputs
+                .iter()
+                .map(|out| out.as_plain())
+                .collect::<Vec<String>>()
+                .join(" | ");
 
-        println!("{}", output);
+            println!("{}", output);
+        }
     }
 }
 
