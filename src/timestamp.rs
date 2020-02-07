@@ -1,7 +1,10 @@
+use crate::error::Error;
+use crate::output::{OutputUpdate, UpdateType};
 use chrono::prelude::*;
 use chrono::Duration;
 use log::{debug, info};
 use serde::Deserialize;
+use std::sync::mpsc::Sender;
 use std::thread;
 
 #[derive(PartialEq, Debug, Clone, Deserialize)]
@@ -20,34 +23,32 @@ pub struct TimestampConfig {
 #[derive(Debug)]
 pub struct TimestampGenerator {
     config: TimestampConfig,
-    first_iteration: bool,
+    id: usize,
 }
 
 impl TimestampGenerator {
-    pub fn new(config: TimestampConfig) -> Self {
-        TimestampGenerator {
-            config,
-            first_iteration: true,
+    pub fn new(config: TimestampConfig, id: usize) -> Self {
+        TimestampGenerator { config, id }
+    }
+
+    pub fn start_generating(&self, tx: Sender<OutputUpdate>) -> Result<(), Error> {
+        tx.send(OutputUpdate {
+            id: self.id,
+            update: UpdateType::Timestamp(self.generate_output()),
+        })?;
+
+        loop {
+            thread::sleep(calculate_sleep_duration(&self.config.accuracy));
+            tx.send(OutputUpdate {
+                id: self.id,
+                update: UpdateType::Timestamp(self.generate_output()),
+            })?;
         }
     }
 
     fn generate_output(&self) -> String {
         let now = Local::now();
         now.format(&self.config.format).to_string()
-    }
-}
-
-impl Iterator for TimestampGenerator {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.first_iteration {
-            self.first_iteration = false;
-            return Some(self.generate_output());
-        }
-
-        thread::sleep(calculate_sleep_duration(&self.config.accuracy));
-        Some(self.generate_output())
     }
 }
 

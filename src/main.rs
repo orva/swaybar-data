@@ -107,13 +107,9 @@ fn main() {
 fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig, id: usize) {
     info!("Spawning timestamp generation thread");
     thread::spawn(move || {
-        let timestamps = TimestampGenerator::new(config);
-        for update in timestamps {
-            tx.send(OutputUpdate {
-                id,
-                update: UpdateType::Timestamp(update),
-            })
-            .unwrap();
+        let timestamps = TimestampGenerator::new(config, id);
+        if let Err(err) = timestamps.start_generating(tx) {
+            error!("Timestamp generation stopped with error {}", err);
         }
     });
 }
