@@ -32,7 +32,7 @@ impl TimestampGenerator {
     }
 
     fn generate_output(&self) -> String {
-        let now = Utc::now();
+        let now = Local::now();
         now.format(&self.config.format).to_string()
     }
 }
