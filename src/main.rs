@@ -81,6 +81,9 @@ fn main() {
 
     start_dbusdata_generation(tx.clone(), dbusdata_builder);
 
+    // sleep a bit to give generators time to output stuff
+    std::thread::sleep(std::time::Duration::from_millis(550));
+
     loop {
         let OutputUpdate { id, update } = match rx.recv() {
             Err(err) => {
@@ -93,15 +96,19 @@ fn main() {
         let output_changed = outputs[id].update(update);
 
         if output_changed {
-            let output = outputs
-                .iter()
-                .map(|out| out.as_plain())
-                .collect::<Vec<String>>()
-                .join(" | ");
-
-            println!("{}", output);
+            output_plain_prompt(&outputs);
         }
     }
+}
+
+fn output_plain_prompt(outputs: &Vec<Output>) {
+    let output = outputs
+        .iter()
+        .map(|out| out.as_plain())
+        .collect::<Vec<String>>()
+        .join(" | ");
+
+    println!("{}", output);
 }
 
 fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig, id: usize) {
