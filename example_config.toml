@@ -1,7 +1,8 @@
 [[outputs]]
-type = "timestamp"
-format = "%a %Y-%m-%d - %H:%M:%S"
-accuracy = "minutes"
+type = "battery"
 
 [[outputs]]
-type = "battery"
+type = "timestamp"
+format = "%a %Y-%m-%d - %H:%M:%S"
+# accuracy: seconds|minutes
+accuracy = "seconds"
