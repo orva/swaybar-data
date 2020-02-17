@@ -88,8 +88,6 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPe
 
 pub trait OrgFreedesktopNetworkManager {
     fn reload(&self, flags: u32) -> Result<(), dbus::Error>;
-    fn get_devices(&self) -> Result<Vec<dbus::Path<'static>>, dbus::Error>;
-    fn get_all_devices(&self) -> Result<Vec<dbus::Path<'static>>, dbus::Error>;
     fn get_device_by_ip_iface(&self, iface: &str) -> Result<dbus::Path<'static>, dbus::Error>;
     fn activate_connection(&self, connection: dbus::Path, device: dbus::Path, specific_object: dbus::Path) -> Result<dbus::Path<'static>, dbus::Error>;
     fn add_and_activate_connection(&self, connection: ::std::collections::HashMap<&str, ::std::collections::HashMap<&str, arg::Variant<Box<dyn arg::RefArg>>>>, device: dbus::Path, specific_object: dbus::Path) -> Result<(dbus::Path<'static>, dbus::Path<'static>), dbus::Error>;
@@ -141,16 +139,6 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopNetwor
 
     fn reload(&self, flags: u32) -> Result<(), dbus::Error> {
         self.method_call("org.freedesktop.NetworkManager", "Reload", (flags, ))
-    }
-
-    fn get_devices(&self) -> Result<Vec<dbus::Path<'static>>, dbus::Error> {
-        self.method_call("org.freedesktop.NetworkManager", "GetDevices", ())
-            .and_then(|r: (Vec<dbus::Path<'static>>,)| Ok(r.0))
-    }
-
-    fn get_all_devices(&self) -> Result<Vec<dbus::Path<'static>>, dbus::Error> {
-        self.method_call("org.freedesktop.NetworkManager", "GetAllDevices", ())
-            .and_then(|r: (Vec<dbus::Path<'static>>,)| Ok(r.0))
     }
 
     fn get_device_by_ip_iface(&self, iface: &str) -> Result<dbus::Path<'static>, dbus::Error> {
