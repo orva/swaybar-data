@@ -12,7 +12,7 @@ use timestamp::*;
 
 use env_logger;
 use log::{error, info, LevelFilter};
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Sender, TryRecvError};
 use std::thread;
 use structopt::StructOpt;
 
@@ -81,14 +81,29 @@ fn main() {
 
     start_dbusdata_generation(tx.clone(), dbusdata_builder);
 
-    // sleep a bit to give generators time to output stuff
-    std::thread::sleep(std::time::Duration::from_millis(550));
+    // sleep a bit to give generators time to output stuff, then consume those updates
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+    loop {
+        match rx.try_recv() {
+            Ok(OutputUpdate { id, update }) => {
+                outputs[id].update(update);
+            }
+            Err(err) => match err {
+                TryRecvError::Empty => break,
+                TryRecvError::Disconnected => {
+                    error!("Error while receiving mspc messages");
+                    std::process::exit(3);
+                }
+            },
+        }
+    }
+    output_plain_prompt(&outputs);
 
     loop {
         let OutputUpdate { id, update } = match rx.recv() {
-            Err(err) => {
-                error!("Error while receiving mspc messages {}", err);
-                break;
+            Err(_) => {
+                error!("Error while receiving mspc messages");
+                std::process::exit(3);
             }
             Ok(up) => up,
         };
