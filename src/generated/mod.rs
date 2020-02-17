@@ -6,12 +6,15 @@
 //! cargo install dbus-codegen
 //! dbus-codegen-rust --system-bus --generic-variant --methodtype None  \
 //!     --destination org.freedesktop.UPower                            \
+//!     --skipprefix org.freedesktop                                    \
 //!     --path /org/freedesktop/UPower/devices/DisplayDevice > src/generated/upower_device.rs
 //! dbus-codegen-rust --system-bus --generic-variant --methodtype None  \
 //!     --destination org.freedesktop.UPower                            \
+//!     --skipprefix org.freedesktop                                    \
 //!     --path /org/freedesktop/UPower > src/generated/upower.rs
 //! dbus-codegen-rust --system-bus --generic-variant --methodtype None  \
 //!     --destination org.freedesktop.NetworkManager                    \
+//!     --skipprefix org.freedesktop                                    \
 //!     --path /org/freedesktop/NetworkManager > src/generated/network_manager.rs
 //! ```
 //!

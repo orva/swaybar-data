@@ -1,9 +1,9 @@
 use crate::config::OutputConfig;
 use crate::error::Error;
-use crate::generated::upower::OrgFreedesktopDBusPropertiesPropertiesChanged as UPowerPropsChanged;
-use crate::generated::upower::OrgFreedesktopUPower;
-use crate::generated::upower_device::OrgFreedesktopDBusPropertiesPropertiesChanged as UPowerDevPropsChanged;
-use crate::generated::upower_device::OrgFreedesktopUPowerDevice;
+use crate::generated::upower::DBusPropertiesPropertiesChanged as UPowerPropsChanged;
+use crate::generated::upower::UPower;
+use crate::generated::upower_device::DBusPropertiesPropertiesChanged as UPowerDevPropsChanged;
+use crate::generated::upower_device::UPowerDevice;
 use crate::output::{OutputUpdate, UpdateType};
 
 use dbus::arg::RefArg;

@@ -4,13 +4,13 @@ use dbus as dbus;
 use dbus::arg;
 use dbus::blocking;
 
-pub trait OrgFreedesktopDBusProperties {
+pub trait DBusProperties {
     fn get<R0: for<'b> arg::Get<'b>>(&self, interface_name: &str, property_name: &str) -> Result<arg::Variant<R0>, dbus::Error>;
     fn get_all(&self, interface_name: &str) -> Result<::std::collections::HashMap<String, arg::Variant<Box<dyn arg::RefArg + 'static>>>, dbus::Error>;
     fn set<I2: arg::Arg + arg::Append>(&self, interface_name: &str, property_name: &str, value: arg::Variant<I2>) -> Result<(), dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusProperties for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> DBusProperties for blocking::Proxy<'a, C> {
 
     fn get<R0: for<'b> arg::Get<'b>>(&self, interface_name: &str, property_name: &str) -> Result<arg::Variant<R0>, dbus::Error> {
         self.method_call("org.freedesktop.DBus.Properties", "Get", (interface_name, property_name, ))
@@ -28,13 +28,13 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPr
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopDBusPropertiesPropertiesChanged {
+pub struct DBusPropertiesPropertiesChanged {
     pub interface_name: String,
     pub changed_properties: ::std::collections::HashMap<String, arg::Variant<Box<dyn arg::RefArg + 'static>>>,
     pub invalidated_properties: Vec<String>,
 }
 
-impl arg::AppendAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
+impl arg::AppendAll for DBusPropertiesPropertiesChanged {
     fn append(&self, i: &mut arg::IterAppend) {
         arg::RefArg::append(&self.interface_name, i);
         arg::RefArg::append(&self.changed_properties, i);
@@ -42,9 +42,9 @@ impl arg::AppendAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
+impl arg::ReadAll for DBusPropertiesPropertiesChanged {
     fn read(i: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopDBusPropertiesPropertiesChanged {
+        Ok(DBusPropertiesPropertiesChanged {
             interface_name: i.read()?,
             changed_properties: i.read()?,
             invalidated_properties: i.read()?,
@@ -52,16 +52,16 @@ impl arg::ReadAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopDBusPropertiesPropertiesChanged {
+impl dbus::message::SignalArgs for DBusPropertiesPropertiesChanged {
     const NAME: &'static str = "PropertiesChanged";
     const INTERFACE: &'static str = "org.freedesktop.DBus.Properties";
 }
 
-pub trait OrgFreedesktopDBusIntrospectable {
+pub trait DBusIntrospectable {
     fn introspect(&self) -> Result<String, dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusIntrospectable for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> DBusIntrospectable for blocking::Proxy<'a, C> {
 
     fn introspect(&self) -> Result<String, dbus::Error> {
         self.method_call("org.freedesktop.DBus.Introspectable", "Introspect", ())
@@ -69,12 +69,12 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusIn
     }
 }
 
-pub trait OrgFreedesktopDBusPeer {
+pub trait DBusPeer {
     fn ping(&self) -> Result<(), dbus::Error>;
     fn get_machine_id(&self) -> Result<String, dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPeer for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> DBusPeer for blocking::Proxy<'a, C> {
 
     fn ping(&self) -> Result<(), dbus::Error> {
         self.method_call("org.freedesktop.DBus.Peer", "Ping", ())
@@ -86,7 +86,7 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPe
     }
 }
 
-pub trait OrgFreedesktopNetworkManager {
+pub trait NetworkManager {
     fn reload(&self, flags: u32) -> Result<(), dbus::Error>;
     fn get_device_by_ip_iface(&self, iface: &str) -> Result<dbus::Path<'static>, dbus::Error>;
     fn activate_connection(&self, connection: dbus::Path, device: dbus::Path, specific_object: dbus::Path) -> Result<dbus::Path<'static>, dbus::Error>;
@@ -135,7 +135,7 @@ pub trait OrgFreedesktopNetworkManager {
     fn set_global_dns_configuration(&self, value: ::std::collections::HashMap<String, arg::Variant<Box<dyn arg::RefArg + 'static>>>) -> Result<(), dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopNetworkManager for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> NetworkManager for blocking::Proxy<'a, C> {
 
     fn reload(&self, flags: u32) -> Result<(), dbus::Error> {
         self.method_call("org.freedesktop.NetworkManager", "Reload", (flags, ))
@@ -330,118 +330,118 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopNetwor
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopNetworkManagerPropertiesChanged {
+pub struct NetworkManagerPropertiesChanged {
     pub properties: ::std::collections::HashMap<String, arg::Variant<Box<dyn arg::RefArg + 'static>>>,
 }
 
-impl arg::AppendAll for OrgFreedesktopNetworkManagerPropertiesChanged {
+impl arg::AppendAll for NetworkManagerPropertiesChanged {
     fn append(&self, i: &mut arg::IterAppend) {
         arg::RefArg::append(&self.properties, i);
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopNetworkManagerPropertiesChanged {
+impl arg::ReadAll for NetworkManagerPropertiesChanged {
     fn read(i: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopNetworkManagerPropertiesChanged {
+        Ok(NetworkManagerPropertiesChanged {
             properties: i.read()?,
         })
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopNetworkManagerPropertiesChanged {
+impl dbus::message::SignalArgs for NetworkManagerPropertiesChanged {
     const NAME: &'static str = "PropertiesChanged";
     const INTERFACE: &'static str = "org.freedesktop.NetworkManager";
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopNetworkManagerCheckPermissions {
+pub struct NetworkManagerCheckPermissions {
 }
 
-impl arg::AppendAll for OrgFreedesktopNetworkManagerCheckPermissions {
+impl arg::AppendAll for NetworkManagerCheckPermissions {
     fn append(&self, _: &mut arg::IterAppend) {
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopNetworkManagerCheckPermissions {
+impl arg::ReadAll for NetworkManagerCheckPermissions {
     fn read(_: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopNetworkManagerCheckPermissions {
+        Ok(NetworkManagerCheckPermissions {
         })
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopNetworkManagerCheckPermissions {
+impl dbus::message::SignalArgs for NetworkManagerCheckPermissions {
     const NAME: &'static str = "CheckPermissions";
     const INTERFACE: &'static str = "org.freedesktop.NetworkManager";
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopNetworkManagerStateChanged {
+pub struct NetworkManagerStateChanged {
     pub state: u32,
 }
 
-impl arg::AppendAll for OrgFreedesktopNetworkManagerStateChanged {
+impl arg::AppendAll for NetworkManagerStateChanged {
     fn append(&self, i: &mut arg::IterAppend) {
         arg::RefArg::append(&self.state, i);
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopNetworkManagerStateChanged {
+impl arg::ReadAll for NetworkManagerStateChanged {
     fn read(i: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopNetworkManagerStateChanged {
+        Ok(NetworkManagerStateChanged {
             state: i.read()?,
         })
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopNetworkManagerStateChanged {
+impl dbus::message::SignalArgs for NetworkManagerStateChanged {
     const NAME: &'static str = "StateChanged";
     const INTERFACE: &'static str = "org.freedesktop.NetworkManager";
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopNetworkManagerDeviceAdded {
+pub struct NetworkManagerDeviceAdded {
     pub device_path: dbus::Path<'static>,
 }
 
-impl arg::AppendAll for OrgFreedesktopNetworkManagerDeviceAdded {
+impl arg::AppendAll for NetworkManagerDeviceAdded {
     fn append(&self, i: &mut arg::IterAppend) {
         arg::RefArg::append(&self.device_path, i);
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopNetworkManagerDeviceAdded {
+impl arg::ReadAll for NetworkManagerDeviceAdded {
     fn read(i: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopNetworkManagerDeviceAdded {
+        Ok(NetworkManagerDeviceAdded {
             device_path: i.read()?,
         })
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopNetworkManagerDeviceAdded {
+impl dbus::message::SignalArgs for NetworkManagerDeviceAdded {
     const NAME: &'static str = "DeviceAdded";
     const INTERFACE: &'static str = "org.freedesktop.NetworkManager";
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopNetworkManagerDeviceRemoved {
+pub struct NetworkManagerDeviceRemoved {
     pub device_path: dbus::Path<'static>,
 }
 
-impl arg::AppendAll for OrgFreedesktopNetworkManagerDeviceRemoved {
+impl arg::AppendAll for NetworkManagerDeviceRemoved {
     fn append(&self, i: &mut arg::IterAppend) {
         arg::RefArg::append(&self.device_path, i);
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopNetworkManagerDeviceRemoved {
+impl arg::ReadAll for NetworkManagerDeviceRemoved {
     fn read(i: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopNetworkManagerDeviceRemoved {
+        Ok(NetworkManagerDeviceRemoved {
             device_path: i.read()?,
         })
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopNetworkManagerDeviceRemoved {
+impl dbus::message::SignalArgs for NetworkManagerDeviceRemoved {
     const NAME: &'static str = "DeviceRemoved";
     const INTERFACE: &'static str = "org.freedesktop.NetworkManager";
 }

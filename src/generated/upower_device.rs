@@ -4,13 +4,13 @@ use dbus as dbus;
 use dbus::arg;
 use dbus::blocking;
 
-pub trait OrgFreedesktopDBusProperties {
+pub trait DBusProperties {
     fn get<R0: for<'b> arg::Get<'b>>(&self, interface_name: &str, property_name: &str) -> Result<arg::Variant<R0>, dbus::Error>;
     fn get_all(&self, interface_name: &str) -> Result<::std::collections::HashMap<String, arg::Variant<Box<dyn arg::RefArg + 'static>>>, dbus::Error>;
     fn set<I2: arg::Arg + arg::Append>(&self, interface_name: &str, property_name: &str, value: arg::Variant<I2>) -> Result<(), dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusProperties for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> DBusProperties for blocking::Proxy<'a, C> {
 
     fn get<R0: for<'b> arg::Get<'b>>(&self, interface_name: &str, property_name: &str) -> Result<arg::Variant<R0>, dbus::Error> {
         self.method_call("org.freedesktop.DBus.Properties", "Get", (interface_name, property_name, ))
@@ -28,13 +28,13 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPr
 }
 
 #[derive(Debug)]
-pub struct OrgFreedesktopDBusPropertiesPropertiesChanged {
+pub struct DBusPropertiesPropertiesChanged {
     pub interface_name: String,
     pub changed_properties: ::std::collections::HashMap<String, arg::Variant<Box<dyn arg::RefArg + 'static>>>,
     pub invalidated_properties: Vec<String>,
 }
 
-impl arg::AppendAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
+impl arg::AppendAll for DBusPropertiesPropertiesChanged {
     fn append(&self, i: &mut arg::IterAppend) {
         arg::RefArg::append(&self.interface_name, i);
         arg::RefArg::append(&self.changed_properties, i);
@@ -42,9 +42,9 @@ impl arg::AppendAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
     }
 }
 
-impl arg::ReadAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
+impl arg::ReadAll for DBusPropertiesPropertiesChanged {
     fn read(i: &mut arg::Iter) -> Result<Self, arg::TypeMismatchError> {
-        Ok(OrgFreedesktopDBusPropertiesPropertiesChanged {
+        Ok(DBusPropertiesPropertiesChanged {
             interface_name: i.read()?,
             changed_properties: i.read()?,
             invalidated_properties: i.read()?,
@@ -52,16 +52,16 @@ impl arg::ReadAll for OrgFreedesktopDBusPropertiesPropertiesChanged {
     }
 }
 
-impl dbus::message::SignalArgs for OrgFreedesktopDBusPropertiesPropertiesChanged {
+impl dbus::message::SignalArgs for DBusPropertiesPropertiesChanged {
     const NAME: &'static str = "PropertiesChanged";
     const INTERFACE: &'static str = "org.freedesktop.DBus.Properties";
 }
 
-pub trait OrgFreedesktopDBusIntrospectable {
+pub trait DBusIntrospectable {
     fn introspect(&self) -> Result<String, dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusIntrospectable for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> DBusIntrospectable for blocking::Proxy<'a, C> {
 
     fn introspect(&self) -> Result<String, dbus::Error> {
         self.method_call("org.freedesktop.DBus.Introspectable", "Introspect", ())
@@ -69,12 +69,12 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusIn
     }
 }
 
-pub trait OrgFreedesktopDBusPeer {
+pub trait DBusPeer {
     fn ping(&self) -> Result<(), dbus::Error>;
     fn get_machine_id(&self) -> Result<String, dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPeer for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> DBusPeer for blocking::Proxy<'a, C> {
 
     fn ping(&self) -> Result<(), dbus::Error> {
         self.method_call("org.freedesktop.DBus.Peer", "Ping", ())
@@ -86,7 +86,7 @@ impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopDBusPe
     }
 }
 
-pub trait OrgFreedesktopUPowerDevice {
+pub trait UPowerDevice {
     fn refresh(&self) -> Result<(), dbus::Error>;
     fn get_history(&self, type_: &str, timespan: u32, resolution: u32) -> Result<Vec<(u32, f64, u32)>, dbus::Error>;
     fn get_statistics(&self, type_: &str) -> Result<Vec<(f64, f64)>, dbus::Error>;
@@ -121,7 +121,7 @@ pub trait OrgFreedesktopUPowerDevice {
     fn get_icon_name(&self) -> Result<String, dbus::Error>;
 }
 
-impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> OrgFreedesktopUPowerDevice for blocking::Proxy<'a, C> {
+impl<'a, C: ::std::ops::Deref<Target=blocking::Connection>> UPowerDevice for blocking::Proxy<'a, C> {
 
     fn refresh(&self) -> Result<(), dbus::Error> {
         self.method_call("org.freedesktop.UPower.Device", "Refresh", ())
