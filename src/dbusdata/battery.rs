@@ -59,7 +59,7 @@ impl Battery {
             .enumerate_devices()?
             .into_iter()
             .map(|path| conn.with_proxy("org.freedesktop.UPower", path, proxy_timeout))
-            .find(|proxy| match proxy.get_type() {
+            .find(|proxy| match proxy.type_() {
                 Err(_) => {
                     error!("Failed to get device type");
                     false
@@ -84,19 +84,19 @@ impl Battery {
 
         let bat_proxy = conn.with_proxy("org.freedesktop.UPower", &self.path, proxy_timeout);
 
-        let percentage = bat_proxy.get_percentage()?;
+        let percentage = bat_proxy.percentage()?;
         tx.send(OutputUpdate {
             id: self.id,
             update: UpdateType::Percentage(percentage),
         })?;
 
-        let time_to_full = bat_proxy.get_time_to_full()?;
+        let time_to_full = bat_proxy.time_to_full()?;
         tx.send(OutputUpdate {
             id: self.id,
             update: UpdateType::TimeToFull(time_to_full),
         })?;
 
-        let time_to_empty = bat_proxy.get_time_to_empty()?;
+        let time_to_empty = bat_proxy.time_to_empty()?;
         tx.send(OutputUpdate {
             id: self.id,
             update: UpdateType::TimeToEmpty(time_to_empty),

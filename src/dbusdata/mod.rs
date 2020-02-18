@@ -57,7 +57,7 @@ impl DBusdata {
             let handler = create_discharging_state_handler(tx.clone(), bat_ids);
             upower_proxy.match_signal(handler)?;
 
-            let on_battery = upower_proxy.get_on_battery()?;
+            let on_battery = upower_proxy.on_battery()?;
             for bat in self.batteries.iter() {
                 bat.start_listening(tx.clone(), &self.conn)?;
                 tx.send(OutputUpdate {
