@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install DBus
-      run: sudo apt-get install dbus dbus-test libdbus-1-dev
+      run: sudo apt-get install dbus dbus-tests libdbus-1-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
