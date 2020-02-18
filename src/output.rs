@@ -26,13 +26,8 @@ pub struct Timestamp {
     pub config: TimestampConfig,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Battery {
-    pub state: BatteryState,
-}
-
-#[derive(Debug, Default, PartialEq)]
-pub struct BatteryState {
     pub percentage: f64,
     pub on_battery: bool,
     pub seconds_to_full: i64,
@@ -53,20 +48,20 @@ impl Output {
             }
             Output::Battery(ref mut bat) => match update {
                 UpdateType::Percentage(p) => {
-                    bat.state.percentage = p;
-                    bat.state.percentage == p
+                    bat.percentage = p;
+                    bat.percentage == p
                 }
                 UpdateType::OnBattery(b) => {
-                    bat.state.on_battery = b;
-                    bat.state.on_battery == b
+                    bat.on_battery = b;
+                    bat.on_battery == b
                 }
                 UpdateType::TimeToFull(t) => {
-                    bat.state.seconds_to_full = t;
-                    bat.state.seconds_to_full == t
+                    bat.seconds_to_full = t;
+                    bat.seconds_to_full == t
                 }
                 UpdateType::TimeToEmpty(t) => {
-                    bat.state.seconds_to_empty = t;
-                    bat.state.seconds_to_empty == t
+                    bat.seconds_to_empty = t;
+                    bat.seconds_to_empty == t
                 }
                 _ => false,
             },
@@ -76,16 +71,16 @@ impl Output {
     pub fn as_plain(&self) -> String {
         match self {
             Output::Timestamp(ref ts) => ts.state.clone(),
-            Output::Battery(ref bat) => match bat.state.on_battery {
+            Output::Battery(ref bat) => match bat.on_battery {
                 true => format!(
                     "BAT {}%: {} remaining",
-                    bat.state.percentage,
-                    secs_to_human(bat.state.seconds_to_empty)
+                    bat.percentage,
+                    secs_to_human(bat.seconds_to_empty)
                 ),
                 false => format!(
                     "CHR {}%: {} to full",
-                    bat.state.percentage,
-                    secs_to_human(bat.state.seconds_to_full)
+                    bat.percentage,
+                    secs_to_human(bat.seconds_to_full)
                 ),
             },
         }
@@ -109,9 +104,7 @@ impl From<&OutputConfig> for Output {
                 state: "".to_string(),
                 config: c.clone(),
             }),
-            OutputConfig::Battery => Output::Battery(Battery {
-                state: BatteryState::default(),
-            }),
+            OutputConfig::Battery => Output::Battery(Battery::default()),
         }
     }
 }
