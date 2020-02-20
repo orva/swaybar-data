@@ -1,7 +1,7 @@
 use crate::config::OutputConfig;
 use crate::error::Error;
+use crate::generated::dbus_properties::DBusPropertiesPropertiesChanged;
 use crate::generated::upower::UPower;
-use crate::generated::upower_device::DBusPropertiesPropertiesChanged as UPowerDevPropsChanged;
 use crate::generated::upower_device::UPowerDevice;
 use crate::output::{OutputUpdate, UpdateType};
 
@@ -111,8 +111,8 @@ impl Battery {
 fn create_battery_change_handler<'a>(
     tx: Sender<OutputUpdate>,
     id: usize,
-) -> impl FnMut(UPowerDevPropsChanged, &Connection, &Message) -> bool + 'a {
-    move |props: UPowerDevPropsChanged, _: &Connection, _: &Message| {
+) -> impl FnMut(DBusPropertiesPropertiesChanged, &Connection, &Message) -> bool + 'a {
+    move |props: DBusPropertiesPropertiesChanged, _: &Connection, _: &Message| {
         if let Some(arg) = props.changed_properties.get("Percentage") {
             let percentage = match arg.as_f64() {
                 Some(p) => p,

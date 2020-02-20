@@ -3,7 +3,7 @@ mod battery;
 use crate::config::OutputConfig;
 use crate::dbusdata::battery::*;
 use crate::error::Error;
-use crate::generated::upower::DBusPropertiesPropertiesChanged as UPowerPropsChanged;
+use crate::generated::dbus_properties::DBusPropertiesPropertiesChanged;
 use crate::generated::upower::UPower;
 use crate::output::{OutputUpdate, UpdateType};
 
@@ -76,8 +76,8 @@ impl DBusdata {
 fn create_discharging_state_handler<'a>(
     tx: Sender<OutputUpdate>,
     ids: Vec<usize>,
-) -> impl FnMut(UPowerPropsChanged, &Connection, &Message) -> bool + 'a {
-    move |props: UPowerPropsChanged, _: &Connection, _: &Message| {
+) -> impl FnMut(DBusPropertiesPropertiesChanged, &Connection, &Message) -> bool + 'a {
+    move |props: DBusPropertiesPropertiesChanged, _: &Connection, _: &Message| {
         if let Some(arg) = props.changed_properties.get("OnBattery") {
             let on_battery = match arg.as_u64() {
                 Some(p) => p != 0,

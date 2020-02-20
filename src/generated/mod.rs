@@ -23,8 +23,11 @@
 //! that bindings can be generated on device which doesn't have batteries included.
 
 #[rustfmt::skip]
+pub mod dbus_properties;
+#[rustfmt::skip]
 pub mod upower;
 #[rustfmt::skip]
+#[allow(unused_imports)]
 pub mod upower_device;
 #[rustfmt::skip]
 pub mod network_manager;
