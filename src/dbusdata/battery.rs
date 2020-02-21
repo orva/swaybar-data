@@ -75,7 +75,11 @@ impl DBusSource for BatterySource {
         })
     }
 
-    fn start_listening(&self, tx: Sender<OutputUpdate>, conn: &Connection) -> Result<(), Error> {
+    fn start_listening(
+        &mut self,
+        tx: Sender<OutputUpdate>,
+        conn: &Connection,
+    ) -> Result<(), Error> {
         debug!("Setup battery listener for {:?}", self.path);
         let proxy_timeout = Duration::from_secs(5);
 

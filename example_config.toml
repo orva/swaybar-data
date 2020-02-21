@@ -1,8 +1,11 @@
 [[outputs]]
+type = "active_connections"
+
+[[outputs]]
 type = "battery"
 
 [[outputs]]
 type = "timestamp"
 format = "%a %Y-%m-%d - %H:%M:%S"
 # accuracy: seconds|minutes
-accuracy = "seconds"
+accuracy = "minutes"

@@ -76,6 +76,11 @@ fn main() {
                     .with_config((i, OutputConfig::Battery))
                     .unwrap();
             }
+            Output::ActiveConnections(ref _conns) => {
+                dbusdata_builder
+                    .with_config((i, OutputConfig::ActiveConnections))
+                    .unwrap();
+            }
         }
     }
 

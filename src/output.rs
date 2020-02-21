@@ -1,6 +1,8 @@
 use crate::config::*;
 use crate::timestamp::*;
 
+use uuid::Uuid;
+
 pub struct OutputUpdate {
     pub id: usize,
     pub update: UpdateType,
@@ -12,12 +14,16 @@ pub enum UpdateType {
     OnBattery(bool),
     TimeToFull(i64),
     TimeToEmpty(i64),
+    WifiConnected((Uuid, Option<String>, u8)),
+    WifiDisconnected(Uuid),
+    WifiStrength((Uuid, u8)),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Output {
     Timestamp(Timestamp),
     Battery(Battery),
+    ActiveConnections(ActiveConnections),
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,6 +38,20 @@ pub struct Battery {
     pub on_battery: bool,
     pub seconds_to_full: i64,
     pub seconds_to_empty: i64,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct ActiveConnections {
+    pub wifis: Vec<Wifi>,
+}
+
+#[derive(Debug, PartialEq, Default, Clone)]
+pub struct Wifi {
+    /// afaik, newer spec would like to ssids to be utf-8, but older ones specified ssid as vector
+    /// of bytes. We want to handle only valid utf-8 ssids, thus we have `Option`.
+    pub ssid: Option<String>,
+    pub strength: u8,
+    uuid: Uuid,
 }
 
 impl Output {
@@ -69,6 +89,32 @@ impl Output {
                 }
                 _ => false,
             },
+            Output::ActiveConnections(ref mut conns) => match update {
+                UpdateType::WifiConnected((uuid, ssid, strength)) => {
+                    conns.wifis.push(Wifi {
+                        ssid,
+                        uuid,
+                        strength,
+                        ..Wifi::default()
+                    });
+                    true
+                }
+                UpdateType::WifiDisconnected(uuid) => {
+                    conns.wifis.retain(|wifi| wifi.uuid != uuid);
+                    true
+                }
+                UpdateType::WifiStrength((uuid, strength)) => {
+                    let matching_wifi = conns.wifis.iter_mut().find(|wifi| wifi.uuid == uuid);
+                    match matching_wifi {
+                        Some(mut wifi) => {
+                            wifi.strength = strength;
+                            true
+                        }
+                        None => false,
+                    }
+                }
+                _ => false,
+            },
         }
     }
 
@@ -87,6 +133,18 @@ impl Output {
                     secs_to_human(bat.seconds_to_full)
                 ),
             },
+            Output::ActiveConnections(ref conns) => conns
+                .wifis
+                .iter()
+                .map(|wifi| {
+                    let ssid = match &wifi.ssid {
+                        Some(s) => s.clone(),
+                        None => "unknown".to_string(),
+                    };
+                    format!("wifi: {} - {}%", ssid, wifi.strength)
+                })
+                .collect::<Vec<String>>()
+                .join(" | "),
         }
     }
 }
@@ -109,6 +167,9 @@ impl From<&OutputConfig> for Output {
                 config: c.clone(),
             }),
             OutputConfig::Battery => Output::Battery(Battery::default()),
+            OutputConfig::ActiveConnections => {
+                Output::ActiveConnections(ActiveConnections::default())
+            }
         }
     }
 }

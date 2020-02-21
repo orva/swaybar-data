@@ -1,7 +1,9 @@
 mod battery;
+mod network;
 
 use crate::config::OutputConfig;
 use crate::dbusdata::battery::*;
+use crate::dbusdata::network::*;
 use crate::error::Error;
 use crate::generated::dbus_properties::DBusPropertiesPropertiesChanged;
 use crate::generated::upower::UPower;
@@ -17,13 +19,15 @@ use std::time::Duration;
 pub struct DBusdata {
     conn: Connection,
     batteries: Vec<BatterySource>,
+    active_connections: Vec<ActiveConnectionsSource>,
 }
 
 pub trait DBusSource {
     fn new(id: usize, _conf: OutputConfig, conn: &Connection) -> Result<Self, Error>
     where
         Self: Sized;
-    fn start_listening(&self, tx: Sender<OutputUpdate>, conn: &Connection) -> Result<(), Error>;
+    fn start_listening(&mut self, tx: Sender<OutputUpdate>, conn: &Connection)
+        -> Result<(), Error>;
 }
 
 impl DBusdata {
@@ -32,6 +36,7 @@ impl DBusdata {
         Ok(DBusdata {
             conn,
             batteries: Vec::new(),
+            active_connections: Vec::new(),
         })
     }
 
@@ -39,8 +44,12 @@ impl DBusdata {
         let (id, conf) = config;
         match conf {
             OutputConfig::Battery => {
-                let bat = battery::BatterySource::new(id, conf, &self.conn)?;
+                let bat = BatterySource::new(id, conf, &self.conn)?;
                 self.batteries.push(bat);
+            }
+            OutputConfig::ActiveConnections => {
+                let conns = ActiveConnectionsSource::new(id, conf, &self.conn)?;
+                self.active_connections.push(conns);
             }
             _ => {}
         };
@@ -65,7 +74,7 @@ impl DBusdata {
             upower_proxy.match_signal(handler)?;
 
             let on_battery = upower_proxy.on_battery()?;
-            for bat in self.batteries.iter() {
+            for bat in self.batteries.iter_mut() {
                 bat.start_listening(tx.clone(), &self.conn)?;
                 tx.send(OutputUpdate {
                     id: bat.id,
@@ -73,6 +82,13 @@ impl DBusdata {
                 })?;
             }
         };
+
+        if !self.active_connections.is_empty() {
+            debug!("Setup active connections state listener");
+            for ac in self.active_connections.iter_mut() {
+                ac.start_listening(tx.clone(), &self.conn)?;
+            }
+        }
 
         loop {
             self.conn.process(Duration::from_secs(1))?;
