@@ -129,7 +129,7 @@ fn output_plain_prompt(outputs: &Vec<Output>) {
 fn start_timestamp_generation(tx: Sender<OutputUpdate>, config: TimestampConfig, id: usize) {
     info!("Spawning timestamp generation thread");
     thread::spawn(move || {
-        let timestamps = TimestampGenerator::new(config, id);
+        let timestamps = TimestampSource::new(config, id);
         if let Err(err) = timestamps.start_generating(tx) {
             error!("Timestamp generation stopped with error {}", err);
         }

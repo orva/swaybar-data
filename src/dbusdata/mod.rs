@@ -16,7 +16,7 @@ use std::time::Duration;
 
 pub struct DBusdata {
     conn: Connection,
-    batteries: Vec<Battery>,
+    batteries: Vec<BatterySource>,
 }
 
 impl DBusdata {
@@ -32,7 +32,7 @@ impl DBusdata {
         let (id, conf) = config;
         match conf {
             OutputConfig::Battery => {
-                let bat = battery::Battery::new(id, conf, &self.conn)?;
+                let bat = battery::BatterySource::new(id, conf, &self.conn)?;
                 self.batteries.push(bat);
             }
             _ => {}

@@ -21,14 +21,14 @@ pub struct TimestampConfig {
 }
 
 #[derive(Debug)]
-pub struct TimestampGenerator {
+pub struct TimestampSource {
     config: TimestampConfig,
     id: usize,
 }
 
-impl TimestampGenerator {
+impl TimestampSource {
     pub fn new(config: TimestampConfig, id: usize) -> Self {
-        TimestampGenerator { config, id }
+        TimestampSource { config, id }
     }
 
     pub fn start_generating(&self, tx: Sender<OutputUpdate>) -> Result<(), Error> {

@@ -41,12 +41,12 @@ impl From<u32> for DeviceType {
     }
 }
 
-pub struct Battery {
+pub struct BatterySource {
     pub id: usize,
     pub path: dbus::Path<'static>,
 }
 
-impl Battery {
+impl BatterySource {
     pub fn new(id: usize, _conf: OutputConfig, conn: &Connection) -> Result<Self, Error> {
         let proxy_timeout = Duration::from_secs(5);
         let upower = conn.with_proxy(
@@ -68,7 +68,7 @@ impl Battery {
             })
             .ok_or(Error::NoBatteryFound)?;
 
-        Ok(Battery {
+        Ok(BatterySource {
             id,
             path: bat_proxy.path,
         })
