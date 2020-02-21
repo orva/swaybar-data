@@ -19,6 +19,13 @@ pub struct DBusdata {
     batteries: Vec<BatterySource>,
 }
 
+pub trait DBusSource {
+    fn new(id: usize, _conf: OutputConfig, conn: &Connection) -> Result<Self, Error>
+    where
+        Self: Sized;
+    fn start_listening(&self, tx: Sender<OutputUpdate>, conn: &Connection) -> Result<(), Error>;
+}
+
 impl DBusdata {
     pub fn new() -> Result<Self, Error> {
         let conn = Connection::new_system()?;

@@ -1,4 +1,5 @@
 use crate::config::OutputConfig;
+use crate::dbusdata::DBusSource;
 use crate::error::Error;
 use crate::generated::dbus_properties::DBusPropertiesPropertiesChanged;
 use crate::generated::upower::UPower;
@@ -46,8 +47,8 @@ pub struct BatterySource {
     pub path: dbus::Path<'static>,
 }
 
-impl BatterySource {
-    pub fn new(id: usize, _conf: OutputConfig, conn: &Connection) -> Result<Self, Error> {
+impl DBusSource for BatterySource {
+    fn new(id: usize, _conf: OutputConfig, conn: &Connection) -> Result<Self, Error> {
         let proxy_timeout = Duration::from_secs(5);
         let upower = conn.with_proxy(
             "org.freedesktop.UPower",
@@ -74,11 +75,7 @@ impl BatterySource {
         })
     }
 
-    pub fn start_listening(
-        &self,
-        tx: Sender<OutputUpdate>,
-        conn: &Connection,
-    ) -> Result<(), Error> {
+    fn start_listening(&self, tx: Sender<OutputUpdate>, conn: &Connection) -> Result<(), Error> {
         debug!("Setup battery listener for {:?}", self.path);
         let proxy_timeout = Duration::from_secs(5);
 
